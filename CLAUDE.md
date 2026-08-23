@@ -15,7 +15,7 @@ Personal knowledge base of short, visual notes about technologies (frameworks, t
 Each technology `README.md` has two sections:
 
 1. **The use case** — why the technology was created and when to reach for it. One image + a short paragraph.
-2. **How it works** — the key mechanisms, broken into `###` subsections (e.g. Structure, Cache, Affected, Task pipeline for Nx). Each subsection typically has its own image + a short paragraph, and can include a minimal usage example when relevant.
+2. **Key concepts** — the concepts worth knowing, broken into `###` subsections (e.g. Structure, Cache, Affected, Task pipeline for Nx; `satisfies`, Type narrowing, `as const` for TypeScript). Each subsection typically has its own image + a short paragraph, and can include a minimal usage example when relevant.
 
 Keep paragraphs short (a few sentences) — this is a cheat sheet, not full documentation. Only add a subsection when there's a genuinely distinct concept to explain; don't force one for the sake of completeness (e.g. skip an image for a simple concept if it wouldn't add anything).
 

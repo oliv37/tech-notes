@@ -6,7 +6,7 @@
 
 With multiple repos (polyrepo), sharing code between projects means publishing packages and manually syncing versions across repos — slow and error-prone. A monorepo avoids that by keeping all projects in one place, but at scale it raises a new problem: how to know what a change actually affects, and how to avoid rebuilding/retesting everything on every commit. Nx was created to solve this by building a dependency graph of the monorepo and only building, testing, and caching what's actually affected by a change.
 
-## How it works
+## Key concepts
 
 ### Structure
 
