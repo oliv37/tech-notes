@@ -1,21 +1,11 @@
 # Tech Notes
 
-A quick reference for keeping track of the frameworks and tools out there.
+A quick reference for the frameworks and tools worth remembering. Each technology has its own short, numbered notes, each covering a handful of related concepts in whatever format explains them best (text, code, images).
 
-## What a note contains
+## Build tools
 
-Each technology gets its own Markdown file answering two simple questions:
+- [Nx](build-tools/nx)
 
-- **The use case**: why was this technology created, and when to reach for it?
-- **Key concepts**: the ones worth knowing, each illustrated with an image and a few sentences, plus a minimal example to get started with it.
+## Languages
 
-## Organization
-
-Notes are grouped by category (back-end, front-end, build-tools, languages, databases, devops, etc.). Each technology gets its own folder containing a `README.md` and any images it references. Each note is self-contained: it should be readable on its own, without needing context from the others.
-
-## Notes
-
-- Build tools
-  - [Nx](build-tools/nx)
-- Languages
-  - [TypeScript](languages/typescript)
+- [TypeScript](languages/typescript)
