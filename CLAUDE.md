@@ -17,6 +17,7 @@ Personal knowledge base of short notes about technologies (frameworks, tools, la
 ## Working conventions
 
 - Write in English, without a first-person voice ("this repo helps..." not "I use this repo to...").
+- Commits follow Conventional Commits, always with type `docs`, scoped to the technology when the change is specific to one, e.g. `docs(nx): ...` — no scope for repo-wide changes (README, CLAUDE.md, conventions).
 - Keep notes short — this is a cheat sheet, not full documentation.
 - Images are generated externally by the user with an AI image tool, then dropped into the relevant `img/<note-number>/` folder — Claude does not generate them, but can write a descriptive prompt (matching the existing visual style: light blue gradient background, bold navy uppercase title, rounded panels, blue pill labels, arrows) for the user to run through their tool.
 - Before writing explanatory text for an image, read it and check the text actually matches what's shown — call out any mismatch rather than describing what the text says the image should show.
