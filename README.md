@@ -4,13 +4,16 @@ A quick reference for keeping track of the frameworks and tools out there.
 
 ## What a note contains
 
-Each technology gets its own Markdown file answering four simple questions:
+Each technology gets its own Markdown file answering two simple questions:
 
-- **The problem**: why was this technology created?
-- **The idea**: in one image and a few sentences, how it addresses that need.
-- **The use case**: when to reach for it (and when not to).
-- **Usage**: a minimal example to get started with it.
+- **The use case**: why was this technology created, and when to reach for it?
+- **How it works**: the key concepts behind it, each illustrated with an image and a few sentences, plus a minimal example to get started with it.
 
 ## Organization
 
-Notes are grouped by category (back-end, front-end, build-tools, databases, devops, etc.) in dedicated folders. Each note is self-contained: it should be readable on its own, without needing context from the others.
+Notes are grouped by category (back-end, front-end, build-tools, databases, devops, etc.). Each technology gets its own folder containing a `README.md` and any images it references. Each note is self-contained: it should be readable on its own, without needing context from the others.
+
+## Notes
+
+- Build tools
+  - [Nx](build-tools/nx)
