@@ -12,8 +12,6 @@ const colorsConst = ["red", "green", "blue"] as const;
 // readonly ["red", "green", "blue"] — a fixed-length tuple of literal types
 ```
 
-Unlike `satisfies`, `as const` doesn't check the value against anything — it only changes how the value is inferred. They're often combined (`{...} as const satisfies Foo`) to get both: literal, readonly types, validated against a shape.
-
 ## Type narrowing
 
 Given a broader type (e.g. a union), TypeScript narrows it to a more specific one inside a branch, based on a runtime check it recognizes — `typeof`, `instanceof`, `in`, equality, truthiness, or a custom type guard (`x is Type`).
