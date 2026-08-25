@@ -9,3 +9,7 @@ A quick reference for the frameworks and tools worth remembering. Each technolog
 ## Languages
 
 - [TypeScript](languages/typescript)
+
+## Security
+
+- [JOSE](security/jose)
