@@ -31,7 +31,3 @@ Before running a task, Nx computes a hash from the relevant inputs — the proje
 Some tasks genuinely need another task to run first — an `e2e` run needs `app1` to be built (and served) beforehand (unlike `test`, which typically runs straight against the source via TS path mappings, no build required). Declaring `"e2e": { "dependsOn": ["build"] }` tells Nx to resolve a task graph instead of running the task in isolation: running `nx run app1:e2e` then executes `Lib A build` → `App1 build` → `App1 e2e`, in the right order, automatically.
 
 The two mechanisms are complementary: the task pipeline always resolves dependencies in the correct order, while the cache decides which of those steps actually need to re-run.
-
-### Buildable vs non-buildable libs
-
-Every project still gets a `project.json` (Nx needs it for the dependency graph, tags, lint, test, etc.), but not every lib has a `build` target. A **buildable** lib is meant to be published or consumed as compiled output, so it defines a `build` target producing a `dist/`. A **non-buildable** lib is just internal shared code: it has no `build` target at all, and is consumed directly as TypeScript source through the path mappings in `tsconfig.base.json` — the consuming app's own bundler compiles it as part of its own build. So when `app1`'s `build` depends on `^build`, Nx simply finds nothing to run for a non-buildable dependency and skips it, no error.
