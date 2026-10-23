@@ -2,6 +2,8 @@
 
 By default (`Object`), `equals()` compares references (`==`) and `hashCode()` is derived from the object identity. Overriding them defines a logical equality (two objects with the same values are equal).
 
+When to override: always together and on the same fields, whenever an object has a logical equality based on its data: value objects, map keys or set elements, objects compared or searched in collections (`contains()`, `indexOf()`, `remove()`) and in tests (`assertEquals`).
+
 The contract between the two: if `a.equals(b)`, then `a.hashCode() == b.hashCode()`. The reverse is not required: two different objects can share the same hash (collision).
 
 Why it matters: `HashMap` and `HashSet` first use `hashCode()` to find the bucket, then `equals()` to compare the entries within it. Overriding only `equals()` breaks them:
