@@ -5,7 +5,9 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 ## Back-end
 
 - [Java](notes/JAVA.md)
+- [Servlet](notes/SERVLET.md)
 - [Spring](notes/SPRING.md)
+- [Spring Web](notes/SPRING_WEB.md)
 - [Hibernate](notes/HIBERNATE.md)
 
 ## Front-end
@@ -16,5 +18,6 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 ## Cross-cutting
 
+- [HTTP](notes/HTTP.md)
 - [Security](notes/SECURITY.md)
 - [Architecture](notes/ARCHITECTURE.md)
