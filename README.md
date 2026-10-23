@@ -1,15 +1,20 @@
 # Tech Notes
 
-A quick reference for the frameworks and tools worth remembering. Each technology has its own short, numbered notes, each covering a handful of related concepts in whatever format explains them best (text, code, images).
+Short technical notes covering the essentials for a Spring Boot / Angular back-end developer, as a quick refresher (e.g. before an interview).
 
-## Build tools
+## Back-end
 
-- [Nx](build-tools/nx)
+- [Java](notes/JAVA.md)
+- [Spring](notes/SPRING.md)
+- [Hibernate](notes/HIBERNATE.md)
 
-## Languages
+## Front-end
 
-- [TypeScript](languages/typescript)
+- [Angular](notes/ANGULAR.md)
+- [TypeScript](notes/TYPESCRIPT.md)
+- [RxJS](notes/RXJS.md)
 
-## Security
+## Cross-cutting
 
-- [JOSE](security/jose)
+- [Security](notes/SECURITY.md)
+- [Architecture](notes/ARCHITECTURE.md)

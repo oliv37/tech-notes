@@ -1,5 +1,3 @@
-# TypeScript type inference
-
 ## `as const`
 
 By default, TypeScript widens literal expressions to their general type: an array literal becomes a mutable array of a union type, a string literal becomes `string`. `as const` tells it to do the opposite — infer the narrowest possible literal types, and make the whole structure `readonly`.

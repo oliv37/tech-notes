@@ -40,6 +40,29 @@ Pitfalls:
 - Don't use mutable fields in `hashCode()`: if a field changes after the object is added to a `HashSet` / used as a `HashMap` key, the object is stored in the wrong bucket and can no longer be found.
 - `record` classes generate `equals()` and `hashCode()` from all their components, and are immutable, which avoids both problems.
 
+`HashSet` is a `HashMap` under the hood: the elements are the keys, and every value is the same shared dummy object. Simplified from the JDK source:
+
+```java
+public class HashSet<E> {
+  private static final Object PRESENT = new Object();
+  private final HashMap<E, Object> map = new HashMap<>();
+
+  public boolean add(E e) {
+    return map.put(e, PRESENT) == null; // null: the key wasn't there yet
+  }
+
+  public boolean contains(Object o) {
+    return map.containsKey(o);
+  }
+
+  public boolean remove(Object o) {
+    return map.remove(o) == PRESENT;
+  }
+}
+```
+
+Hence the same rules for set elements as for map keys (`hashCode()` / `equals()`, no mutation). Same idea for `LinkedHashSet` (backed by a `LinkedHashMap`) and `TreeSet` (backed by a `TreeMap`).
+
 ## Interfaces: default, static and private methods
 
 Since Java 8 and 9, an interface can contain more than abstract methods:
@@ -123,6 +146,167 @@ Good practices:
 - Never swallow an exception (empty `catch`), and keep the cause when wrapping: `throw new OrderException("...", e)`.
 - Use try-with-resources to close resources (`AutoCloseable`), even when an exception is thrown.
 - Spring `@Transactional` only rolls back on unchecked exceptions by default; a checked exception commits the transaction unless `rollbackFor` is set.
+
+## ClassNotFoundException vs NoClassDefFoundError
+
+- **`ClassNotFoundException`** (checked): a class loaded by name (`Class.forName("...")`, `loadClass()`) isn't on the classpath. Can be caught, e.g. to fall back when an optional library is missing.
+- **`NoClassDefFoundError`** (`Error`): a class referenced directly in the code, present at compile time, can't be used at runtime. Either missing at runtime (dependency not deployed, version conflict), or its static initialization failed earlier: first an `ExceptionInInitializerError`, then `Could not initialize class X` on every later access.
+
+## map vs flatMap
+
+Both transform the elements of a `Stream` (or the value of an `Optional`), the difference is what the function returns:
+
+- **`map`**: the function returns a value, one element in → one element out. `Stream<T>` → `Stream<R>`.
+- **`flatMap`**: the function returns a `Stream` (0, 1 or n elements), and the resulting streams are flattened into a single one. Avoids ending up with a `Stream<Stream<R>>`.
+
+```java
+List<Author> authors = ...;
+
+authors.stream().map(Author::getName);   // Stream<String>: one name per author
+authors.stream().map(Author::getBooks);  // Stream<List<Book>>: a list per author
+authors.stream()
+    .flatMap(a -> a.getBooks().stream()); // Stream<Book>: all books, flattened
+```
+
+Same idea with `Optional`, when the function itself returns an `Optional`:
+
+```java
+Optional<User> user = findUser(id);
+
+user.map(User::getName);       // Optional<String>
+user.map(User::getAddress);    // Optional<Optional<Address>> if getAddress() returns an Optional
+user.flatMap(User::getAddress); // Optional<Address>
+```
+
+Rule of thumb: if the function already returns a container (`Stream`, `Optional`), use `flatMap` to avoid nesting it.
+
+## Switch expressions, records and sealed classes
+
+Three features (Java 14 to 21) designed to work together for data-oriented code: records carry the data, sealed types close the hierarchy, switch handles every case.
+
+**Switch expressions** (Java 14): `switch` returns a value, with `->` instead of `case X:`.
+
+```java
+int days = switch (month) {
+  case FEBRUARY -> 28;
+  case APRIL, JUNE, SEPTEMBER, NOVEMBER -> 30; // several labels
+  default -> {
+    log.debug("31 days");
+    yield 31; // yield returns the value of a block
+  }
+};
+```
+
+- No fall-through: only the matching branch runs, no `break` needed.
+- Exhaustive: as an expression, every case must be handled. On an enum listing all constants, `default` isn't needed, and adding a constant breaks compilation where it's not handled.
+- Selector types: `int`, `short`, `byte`, `char` (and their wrappers), `String`, enums, with constant labels. Since Java 21, any object type with patterns (see pattern matching below). `long`, `float`, `double` and `boolean` are not accepted (still in preview in Java 25).
+
+**Records** (Java 16): immutable data classes. The compiler generates the `private final` fields, the canonical constructor, the accessors (`x()`, not `getX()`), `equals` / `hashCode` / `toString`.
+
+```java
+public record Point(int x, int y) {}
+```
+
+- Implicitly `final`, can't extend a class (they extend `Record`), but can implement interfaces and add methods or static fields. No other instance fields.
+- Shallow immutability: a `List` component can still be modified, hence a defensive copy (`List.copyOf()`).
+- Use cases: DTOs, value objects, query projections. Not JPA entities, which must be mutable, non-final (for proxies) and have a no-arg constructor.
+
+A **compact constructor** customizes the canonical one without repeating the parameters: it validates or normalizes them, and the fields are assigned automatically at the end.
+
+```java
+public record Email(String value) {
+  public Email {
+    Objects.requireNonNull(value);
+    value = value.trim().toLowerCase(); // reassigns the parameter, not the field
+    if (!value.contains("@")) {
+      throw new IllegalArgumentException("Invalid email: " + value);
+    }
+  } // this.value = value is done here
+}
+```
+
+Assigning `this.value` inside it doesn't compile: only the parameter can be changed.
+
+**Sealed classes** (Java 17): a class or interface lists which classes can extend it.
+
+```java
+public sealed interface PaymentResult permits Success, Failure {}
+public record Success(String transactionId) implements PaymentResult {}
+public record Failure(String reason) implements PaymentResult {}
+```
+
+- Each subclass must be `final` (records are), `sealed` (closed again) or `non-sealed` (open again to any subclass).
+- Subclasses must be in the same module (or the same package without modules). `permits` can be omitted if they're in the same file.
+- vs enum: each variant can carry different data (`transactionId` vs `reason`).
+
+Main benefit: a `switch` on a sealed type is exhaustive without `default`. Adding a new variant (`Pending`) breaks compilation in every `switch` that doesn't handle it, instead of silently going to `default`.
+
+```java
+String message = switch (result) {
+  case Success s -> "Paid: " + s.transactionId();
+  case Failure(var reason) -> "Failed: " + reason; // record pattern: destructures the record
+};
+```
+
+## Pattern matching
+
+A pattern tests the shape of a value (its type, its components) and extracts parts of it in a single step, replacing the `instanceof` + cast combo. Usable in two places only: `instanceof` (in an `if` or any boolean expression) and `case` labels of a `switch`. Not in assignments or loops (no destructuring like `var (x, y) = point`).
+
+**Type pattern with `instanceof`** (Java 16): tests the type and declares a variable already cast.
+
+```java
+// before
+if (obj instanceof String) {
+  String s = (String) obj;
+}
+
+// after
+if (obj instanceof String s && s.length() > 5) { // s usable right after the test
+  s.toUpperCase();
+}
+
+if (!(obj instanceof String s)) {
+  return;
+}
+s.length(); // still in scope: the compiler knows obj is a String here
+```
+
+**Type pattern in `switch`** (Java 21): the selector can be any object type, and each `case` tests a type instead of comparing a constant. No sealed type needed:
+
+```java
+String describe(Object obj) {
+  return switch (obj) {
+    case Integer i when i > 100 -> "big number"; // guard
+    case Integer i -> "number " + i;
+    case String s -> "text of length " + s.length();
+    case null -> "null"; // otherwise a null throws a NullPointerException
+    default -> "something else";
+  };
+}
+```
+
+- **Exhaustive**: a pattern `switch` must handle every case, even as a statement. On `Object`, `default` is mandatory; on a sealed type or an enum, it can be omitted if all subtypes or constants are listed (see sealed classes above).
+- **Order matters**: the first matching `case` runs. A `case` that can never be reached doesn't compile (`case CharSequence cs` followed by `case String s`), hence the guarded `case` before the general one.
+
+**Record patterns** (Java 21): deconstruct a record into its components, possibly nested, in `instanceof` and `switch`.
+
+```java
+record Point(int x, int y) {}
+record Line(Point start, Point end) {}
+
+if (obj instanceof Point(int x, int y)) {
+  System.out.println(x + y);
+}
+
+switch (shape) {
+  case Line(Point(var x1, var y1), Point end) -> ... // nested, var infers the type
+  case Point(var x, _) -> ... // _ (Java 22): ignored component
+}
+```
+
+**Primitive patterns** (preview in Java 25): `case int i when i >= 500 ->`, `switch` on `long` / `double` / `boolean`, and `value instanceof byte b` (matches if the `int` fits in a `byte` without loss). Constant `case` labels on `int`, `char`, etc. have always worked; only primitive patterns are new.
+
+Typical use: replacing chains of `instanceof` + cast, or the visitor pattern, to process a closed hierarchy (sealed interface + records).
 
 ## InterruptedException
 
@@ -211,6 +395,17 @@ Since Java 21. A classic (platform) thread is mapped 1:1 to an OS thread: expens
 
 How it works: virtual threads run on a small pool of platform threads called **carrier threads** (about one per CPU core). When a virtual thread blocks (I/O, `sleep()`, waiting for a lock), the JVM unmounts it from its carrier, which immediately runs another virtual thread. Blocking no longer wastes an OS thread.
 
+|               | Platform thread                    | Virtual thread                                     |
+| ------------- | ---------------------------------- | -------------------------------------------------- |
+| Managed by    | the OS (1:1 with an OS thread)     | the JVM (runs on a carrier thread)                 |
+| Cost          | ~1 MB of stack, slow to create     | a few KB, cheap to create                          |
+| How many      | hundreds to thousands              | millions                                           |
+| When blocking | the OS thread waits, doing nothing | unmounted, the carrier runs another virtual thread |
+| Usage         | pooled (`ThreadPoolExecutor`)      | one per task, never pooled                         |
+| Daemon        | configurable                       | always                                             |
+
+Both are `java.lang.Thread`: same API, the code doesn't change.
+
 ```java
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
   for (int i = 0; i < 10_000; i++) {
@@ -231,6 +426,33 @@ Pitfalls:
 - **Pinning**: before Java 24, a virtual thread blocking inside a `synchronized` block can't be unmounted and keeps its carrier busy; prefer `ReentrantLock` on older versions. Native calls still pin.
 - **Downstream limits remain**: 10,000 virtual threads still share the same database connection pool (HikariCP), which becomes the bottleneck.
 - **`ThreadLocal`**: still works, but with millions of threads, heavy per-thread caches consume a lot of memory.
+
+## ScopedValue
+
+Final since Java 25. Shares contextual data (current user, request id) with every method called in a scope, without passing it as a parameter. Same purpose as `ThreadLocal`, designed for virtual threads.
+
+```java
+private static final ScopedValue<User> CURRENT_USER = ScopedValue.newInstance();
+
+// bind the value for the duration of run()
+ScopedValue.where(CURRENT_USER, user).run(() -> handleRequest());
+
+// anywhere down the call stack
+void audit() {
+  User user = CURRENT_USER.get(); // NoSuchElementException if not bound
+}
+```
+
+- `run()` for a `Runnable`, `call()` to return a value. `isBound()` and `orElse()` handle the unbound case.
+- A nested `where(...)` can bind another value for a sub-scope; the previous one comes back when it ends.
+
+Differences with `ThreadLocal`:
+
+- **Immutable**: no `set()`, the value can't be changed by a called method, which makes the data flow easy to follow.
+- **Bounded lifetime**: the value is unbound automatically when `run()` returns. No leak from a forgotten `remove()` (a classic bug with thread pools, where the next task sees the previous value).
+- **Cheap**: no per-thread map to maintain, and child threads created with structured concurrency (`StructuredTaskScope`, still in preview) share the value without copying it, unlike `InheritableThreadLocal`. Matters with millions of virtual threads.
+
+`ThreadLocal` remains useful for a mutable per-thread cache (e.g. a non-thread-safe `SimpleDateFormat`), or when the value is set and read in unrelated places without a clear scope.
 
 ## Singleton
 
@@ -270,7 +492,7 @@ public static Config getInstance() {
 }
 ```
 
-**Holder class**: lazy and thread-safe without any lock. The nested class is only loaded (and the instance created) on the first call to `getInstance()`.
+**Holder class**: lazy and thread-safe without any lock. The static nested class is only initialized (and the instance created) on the first access to `Holder.INSTANCE`, i.e. the first call to `getInstance()`. The JVM guarantees a class is initialized only once, other threads waiting until it's done (JLS §12.4.2).
 
 ```java
 public class Config {
@@ -290,3 +512,62 @@ public enum Config {
 ```
 
 In practice: a singleton is global state, hard to replace in tests. In a Spring application, beans are already singletons by default (one instance per container) and injected, which gives the same guarantee while keeping the code testable.
+
+## Main evolutions since Java 8
+
+Since Java 10, a new version every 6 months, and an LTS (long-term support) every 2 years since Java 17. Projects usually move from LTS to LTS: 8 → 11 → 17 → 21 → 25.
+
+**Java 8 (2014, LTS)**: the big shift to functional style.
+
+- Lambdas and method references (`Author::getName`), functional interfaces (`Function`, `Predicate`, `Supplier`)
+- Stream API, `Optional`
+- `default` and `static` methods in interfaces
+- `java.time` (`LocalDate`, `Instant`, `Duration`), replacing `Date` and `Calendar`
+- `CompletableFuture`
+
+**Java 9 to 11 (LTS)**
+
+- Modules (JPMS, `module-info.java`): strong encapsulation of the JDK, rarely used in applications
+- Immutable collection factories: `List.of()`, `Set.of()`, `Map.of()`
+- `var` for local variables (Java 10): `var authors = new ArrayList<Author>();`
+- `HttpClient` (HTTP/2, sync and async), new `String` methods (`isBlank()`, `strip()`, `lines()`, `repeat()`)
+- Running a single file without compiling: `java Main.java`
+- Java EE modules (JAXB, JAX-WS) removed from the JDK
+
+**Java 12 to 17 (LTS)**: less boilerplate, data-oriented code.
+
+- Switch expressions: `case A, B -> ...`, the `switch` returns a value
+- Text blocks: multi-line strings with `"""`
+- Records: immutable data classes, with constructor, accessors, `equals` / `hashCode` / `toString` generated
+
+```java
+public record Point(int x, int y) {}
+```
+
+- Pattern matching for `instanceof`: `if (obj instanceof String s) { s.length(); }`, no cast needed
+- Sealed classes: `sealed interface Shape permits Circle, Square`, restricts which classes can implement it
+- Helpful `NullPointerException` messages, naming what was null (`because "user.getAddress()" is null`)
+
+**Java 18 to 21 (LTS)**
+
+- Virtual threads (see above)
+- Pattern matching for `switch` and record patterns: combined with sealed types, the compiler checks every case is handled
+
+```java
+double area = switch (shape) {
+  case Circle c -> Math.PI * c.radius() * c.radius();
+  case Square(double side) -> side * side; // record pattern: destructures the record
+};
+```
+
+- Sequenced collections: `getFirst()`, `getLast()`, `reversed()` on `List`, `LinkedHashSet`, `LinkedHashMap`
+- UTF-8 by default (Java 18)
+
+**Java 22 to 25 (LTS)**
+
+- Unnamed variables `_`: `catch (Exception _)`, for values that aren't used
+- Stream gatherers (`stream.gather(...)`): custom intermediate operations (sliding windows, etc.)
+- No more pinning of virtual threads in `synchronized` (Java 24)
+- Compact source files and instance `main` (Java 25): `void main() { IO.println("Hello"); }`, no class declaration needed
+- Flexible constructor bodies: code allowed before `super(...)` (e.g. validating arguments)
+- Scoped values: an immutable, cheaper alternative to `ThreadLocal`, suited to virtual threads
