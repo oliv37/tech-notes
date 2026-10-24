@@ -121,6 +121,6 @@ Response ← Filter A ← Filter B ← DispatcherServlet ←
 - **Order** matters: `@Order` or `FilterRegistrationBean.setOrder()` in Spring Boot. A filter declared as a `@Component` is registered automatically for every URL; `FilterRegistrationBean` restricts it to some URL patterns.
 - **`OncePerRequestFilter`** (Spring): guarantees a single execution per request, even when the request is forwarded internally (`forward`, error dispatch), where a plain filter could run twice.
 
-Filter vs Spring `HandlerInterceptor`: a filter belongs to the container and runs before the `DispatcherServlet`, for every request (static files included), without knowing the controller. An interceptor runs inside Spring MVC, around the controller method, with access to the `HandlerMethod` (e.g. its annotations). See [Spring Web](SPRING_WEB.md).
+Filter vs Spring `HandlerInterceptor`: a filter belongs to the container and runs before the `DispatcherServlet`, for every request (static files included), without knowing the controller. An interceptor runs inside Spring MVC, around the controller method, with access to the `HandlerMethod` (e.g. its annotations). See [Spring Web MVC](SPRING_WEBMVC.md).
 
 **Spring Security** is a single filter registered in the container (`DelegatingFilterProxy`), which delegates to `FilterChainProxy`, holding its own chain of security filters (`SecurityFilterChain`: CORS, CSRF, authentication, authorization...). It handles security before the request reaches the `DispatcherServlet`.

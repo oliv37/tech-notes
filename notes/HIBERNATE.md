@@ -1,3 +1,37 @@
+## Hibernate creation and update timestamps
+
+`@CreationTimestamp` and `@UpdateTimestamp` (Hibernate annotations, not JPA) fill timestamp columns automatically:
+
+```java
+@Entity
+public class Order {
+
+  @CreationTimestamp
+  @Column(updatable = false) // never modified afterwards
+  private Instant createdAt; // set on INSERT
+
+  @UpdateTimestamp
+  private Instant updatedAt; // set on INSERT, then on each UPDATE
+}
+```
+
+- Types: `Instant` (safest, no time zone issue), `LocalDateTime`, `OffsetDateTime`...
+- JVM time by default; `@CreationTimestamp(source = SourceType.DB)` uses the database's `current_timestamp` (consistent across instances with slightly different clocks). Both are shortcuts for `@CurrentTimestamp(event = ...)`.
+- `updatedAt` only changes when Hibernate runs an `UPDATE`, i.e. when dirty checking finds a modification.
+- Bypassed by anything not going through the entity: bulk JPQL `UPDATE`, native SQL, JDBC.
+
+Standard JPA alternative, without Hibernate annotations: callbacks on the entity.
+
+```java
+@PrePersist
+void onCreate() { createdAt = updatedAt = Instant.now(); }
+
+@PreUpdate
+void onUpdate() { updatedAt = Instant.now(); }
+```
+
+In a Spring application, Spring Data auditing (`@CreatedDate`, `@CreatedBy`...) is often preferred, see [Spring Data](SPRING_DATA.md).
+
 ## Hibernate fetch types: LAZY vs EAGER
 
 The fetch type defines **when** an association is loaded:

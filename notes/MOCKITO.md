@@ -175,7 +175,7 @@ try (MockedStatic<UUID> uuid = mockStatic(UUID.class)) {
 
 Often better avoided by injecting the dependency instead (a `Clock` rather than mocking `LocalDate.now()`, a `Supplier<UUID>`).
 
-- **In Spring tests**: `@MockitoBean` (Spring Framework 6.2+) replaces a bean of the application context with a mock, e.g. in a `@WebMvcTest`. It replaces Spring Boot's `@MockBean`, deprecated since Spring Boot 3.4. `@MockitoSpyBean` does the same with a spy.
+- **In Spring tests**: `@MockitoBean` (Spring Framework 6.2+) replaces a bean of the application context with a mock, e.g. in a `@WebMvcTest`. It replaces Spring Boot's `@MockBean`, deprecated since Spring Boot 3.4 and removed in Spring Boot 4 (as is `@SpyBean`). `@MockitoSpyBean` does the same with a spy.
 
 ```java
 @WebMvcTest(OrderController.class)
