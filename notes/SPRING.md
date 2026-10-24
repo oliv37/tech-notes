@@ -98,6 +98,31 @@ Pitfalls:
 - **Proxy-based**: a call from inside the same class (`this.send()`) isn't retried, like `@Transactional`.
 - **Idempotence**: only retry operations that are safe to run twice (a payment whose first call may have succeeded isn't).
 - **Only transient errors**: a `4xx` or a business exception fails the same way every time.
-- **With `@Transactional`**: the retry must wrap the transaction, so each attempt runs in a new one.
+- **With `@Transactional`**: the retry must wrap the transaction, so each attempt runs in a new one (see below).
+
+Retry and transaction: Hibernate sends the `UPDATE`s at flush time, usually at commit, which the `@Transactional` proxy runs **after** the method returns. A retry inside the transaction never sees the error: an optimistic locking failure (`@Version`, the typical case) is thrown at commit, outside the retry. And even when the error is thrown inside (explicit `flush()`), the transaction is already lost: marked rollback-only, aborted by the database (PostgreSQL), and the persistence context still holds the stale entity. Each attempt needs a new transaction that reloads the data. Simplest setup: the retry in one bean, the transaction in another, so each attempt goes through the transactional proxy.
+
+```java
+@Service
+public class OrderFacade { // must NOT be @Transactional, or the attempts would join its transaction
+  private final OrderService orderService;
+
+  @Retryable(includes = ObjectOptimisticLockingFailureException.class, maxRetries = 3, delay = 50)
+  public void confirm(long orderId) {
+    orderService.confirm(orderId); // new transaction for each attempt
+  }
+}
+
+@Service
+public class OrderService {
+  @Transactional
+  public void confirm(long orderId) {
+    Order order = orderRepository.findById(orderId).orElseThrow(); // reloaded on each attempt
+    order.confirm();
+  }
+}
+```
+
+Programmatic alternative in a single method: `retryTemplate.invoke(() -> transactionTemplate.executeWithoutResult(status -> ...))`.
 
 Related: `@ConcurrencyLimit(10)` limits concurrent calls to a method, e.g. to protect a fragile API (useful with virtual threads).
