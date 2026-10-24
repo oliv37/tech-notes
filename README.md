@@ -5,10 +5,14 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 ## Back-end
 
 - [Java](notes/JAVA.md)
+- [JUnit](notes/JUNIT.md)
+- [Mockito](notes/MOCKITO.md)
 - [Servlet](notes/SERVLET.md)
 - [Spring](notes/SPRING.md)
 - [Spring Web](notes/SPRING_WEB.md)
+- [JDBC](notes/JDBC.md)
 - [Hibernate](notes/HIBERNATE.md)
+- [Hibernate cache](notes/HIBERNATE_CACHE.md)
 
 ## Front-end
 
