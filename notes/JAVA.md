@@ -1,3 +1,38 @@
+## Collection types
+
+Four main types: `List`, `Set`, `Queue` / `Deque` and `Map`. But a `Map` is **not** a `Collection`: the `Map` interface doesn't extend `Collection`, it's only part of the Collections Framework (`java.util`).
+
+```
+Iterable
+└── Collection
+    ├── List          ordered, duplicates allowed, access by index
+    ├── Set           no duplicates
+    │   └── SortedSet / NavigableSet
+    └── Queue         add at one end, remove at the other
+        └── Deque     add and remove at both ends
+
+Map                   key → value pairs, unique keys (outside the Collection hierarchy)
+└── SortedMap / NavigableMap
+```
+
+Why `Map` isn't a `Collection`: a `Collection` holds single elements (`add(E)`, `contains(E)`, iterating over `E`), a `Map` holds pairs (`put(K, V)`, `get(K)`), so `add()` or iterating would be ambiguous (keys, values or pairs?). Instead, a `Map` exposes three views that are collections: `keySet()` (`Set<K>`), `values()` (`Collection<V>`) and `entrySet()` (`Set<Map.Entry<K, V>>`, to iterate over pairs).
+
+| Type    | Implementation  | Specificity                                                    |
+| ------- | --------------- | -------------------------------------------------------------- |
+| `List`  | `ArrayList`     | resizable array, O(1) access by index, the default choice      |
+|         | `LinkedList`    | linked list, rarely faster in practice                         |
+| `Set`   | `HashSet`       | no order, O(1) (a `HashMap` under the hood)                    |
+|         | `LinkedHashSet` | insertion order                                                |
+|         | `TreeSet`       | sorted (natural order or `Comparator`), O(log n)               |
+| `Queue` | `ArrayDeque`    | queue or stack, the default choice (instead of `Stack`)        |
+|         | `PriorityQueue` | always removes the smallest element first (heap)               |
+| `Map`   | `HashMap`       | no order, O(1), the default choice                             |
+|         | `LinkedHashMap` | insertion order (or access order, for an LRU cache)            |
+|         | `TreeMap`       | sorted keys, O(log n)                                          |
+
+- Since Java 21, `SequencedCollection` / `SequencedMap` add `getFirst()`, `getLast()` and `reversed()` to collections with a defined order (`List`, `Deque`, `LinkedHashSet`, `TreeSet`, `LinkedHashMap`...).
+- For concurrency (`java.util.concurrent`, since Java 5): `ConcurrentHashMap`, `CopyOnWriteArrayList`, `BlockingQueue` (producer / consumer).
+
 ## equals and hashCode
 
 By default (`Object`), `equals()` compares references (`==`) and `hashCode()` is derived from the object identity. Overriding them defines a logical equality (two objects with the same values are equal).
