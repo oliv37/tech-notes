@@ -236,6 +236,21 @@ user = resource({
 - A change of `params` during a load aborts it (`abortSignal`); `params` returning `undefined` doesn't load (`idle`).
 - `value()` throws in `error` status: guard with `hasValue()`, or with an `@boundary` / `@error` block (see [Angular](ANGULAR.md)).
 
+Options of `resource()`: only `loader` (or `stream`) is required.
+
+| Option | Role |
+|---|---|
+| `params` | reactive function computing the request (`request` before Angular 20); its result changing reloads. Without `params`, the loader runs only on `reload()`. Returning `undefined`: no load (`idle`) |
+| `loader` | async function returning a `Promise`: one value per load |
+| `stream` | instead of `loader`, for a continuous source (WebSocket, SSE): several values over time |
+| `defaultValue` | value of `value()` while there is no result (loading, idle), instead of `undefined`; the type becomes `T` instead of `T \| undefined` |
+| `equal` | equality function for the loaded values |
+| `injector` | to create the resource outside an injection context |
+| `id` | cache key to transfer the loaded data from the server to the client in SSR (`TransferState`) |
+
+- The loader receives `params`, `abortSignal` (to pass to `fetch`) and `previous` (`{ status }`, e.g. no spinner during a `reload`).
+- Only the signals read in `params` trigger a reload: everything the request depends on goes through `params`.
+
 **`httpResource()`** (`@angular/common/http`): the same, built on `HttpClient` (interceptors included), with a URL or a request computed from signals:
 
 ```ts
@@ -244,6 +259,19 @@ orders = httpResource<Order[]>(() => ({
   url: "/api/orders",
   params: { status: this.status(), page: this.page() },
 }));
+```
+
+- First argument: a function returning a URL (GET) or an `HttpResourceRequest` (`url`, `method`, `params`, `headers`, `body`...); `undefined` sends nothing.
+- Options (second argument): `defaultValue`, `parse` (validate or transform the response, e.g. with a Zod schema), `equal`, `injector`, `debugName`.
+- JSON by default; `httpResource.text()`, `httpResource.blob()`, `httpResource.arrayBuffer()` for other response types.
+- Like `resource()`, a change of the URL or request during a load cancels the previous request (unsubscription from `HttpClient`): a slow response for an old value can't overwrite the new one, as with `switchMap`.
+
+```ts
+users = httpResource<User[]>(() => `/api/teams/${this.teamId()}/users`, {
+  defaultValue: [],                          // value(): User[], never undefined
+  parse: (raw) => userListSchema.parse(raw), // validates the response
+});
+avatar = httpResource.blob(() => `/api/users/${this.userId()}/avatar`);
 ```
 
 **`rxResource()`** (`@angular/core/rxjs-interop`): the loader returns an `Observable` (`stream` option), to reuse an existing service based on `HttpClient` / RxJS:
