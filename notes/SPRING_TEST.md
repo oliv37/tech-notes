@@ -1,5 +1,7 @@
 ## Which test for which layer
 
+> **In short**: Unit tests without Spring for business logic, slice tests (`@WebMvcTest`, `@DataJpaTest`...) for each technical layer, and a few `@SpringBootTest` integration tests for the main flows.
+
 | Tested component | Test | Context loaded | Speed |
 |---|---|---|---|
 | Service, business logic | unit test, JUnit + Mockito, no Spring | none | ms |
@@ -12,6 +14,8 @@
 The usual balance: many unit tests, slice tests for each technical layer, a few `@SpringBootTest` integration tests for the main flows. Dependency: `spring-boot-starter-test` (JUnit, Mockito, AssertJ, Spring Test); since Spring Boot 4, each technology has its own test starter for its slice (`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`, `spring-boot-starter-security-test`).
 
 ## Unit testing a service
+
+> **In short**: A service using constructor injection is tested without Spring, with Mockito mocks: fast, but it doesn't check the wiring, transactions, security or SQL.
 
 A service with constructor injection is tested without Spring: its dependencies are mocks passed to the constructor (see [Mockito](MOCKITO.md)).
 
@@ -39,6 +43,8 @@ class OrderServiceTest {
 - What it doesn't check: the Spring wiring, `@Transactional`, `@PreAuthorize`, the SQL. Those belong to slice or integration tests.
 
 ## @SpringBootTest: the whole application
+
+> **In short**: `@SpringBootTest` starts the full context. With the default `MOCK` environment, no server starts and MockMvc calls the `DispatcherServlet` in memory, in the test thread (rollback, `@WithMockUser`); with `RANDOM_PORT`, a real server answers real HTTP calls (`RestTestClient`), closer to production.
 
 `@SpringBootTest` starts the full application context, as in production (all beans, auto-configuration, `application.yml`).
 
@@ -109,6 +115,8 @@ Loading the context is the expensive part in both cases: starting Tomcat adds li
 
 ## Controller tests: @WebMvcTest
 
+> **In short**: `@WebMvcTest` loads only the web layer (controllers, advices, filters, security) and replaces the services with `@MockitoBean`; `MockMvcTester` checks the mapping, JSON, validation, status codes and security rules.
+
 `@WebMvcTest` loads only the web layer: controllers, `@RestControllerAdvice`, filters, `WebMvcConfigurer`, Jackson, Spring Security. Services and repositories aren't loaded: they're replaced with `@MockitoBean`.
 
 ```java
@@ -165,6 +173,8 @@ void adminCanDelete() {
 
 ## Repository tests: @DataJpaTest
 
+> **In short**: `@DataJpaTest` loads only JPA and rolls back each test; it tests queries and mappings, ideally against a real PostgreSQL (Testcontainers) rather than the default embedded H2.
+
 `@DataJpaTest` loads only JPA: entities, Spring Data repositories, the `DataSource`, Flyway / Liquibase. Each test is **transactional and rolled back** at the end.
 
 ```java
@@ -196,6 +206,8 @@ class OrderRepositoryTest {
 - Rollback disabled: `@Transactional(propagation = Propagation.NOT_SUPPORTED)` on the class or method.
 
 ## Other test slices
+
+> **In short**: Other slices load one technology each: `@RestClientTest` with `MockRestServiceServer`, `@JsonTest` with `JacksonTester`, `@JdbcTest`, `@WebFluxTest`...
 
 | Annotation | Loads | Typical tool |
 |---|---|---|
@@ -249,6 +261,8 @@ A slice scans only its own types: a `@Service` or a `@Component` isn't loaded. A
 
 ## Real dependencies with Testcontainers
 
+> **In short**: Testcontainers starts the real database or broker in Docker, and `@ServiceConnection` configures the connection automatically; `@DynamicPropertySource` covers the other properties.
+
 Testcontainers starts the real database (or Kafka, Redis) in a Docker container for the tests. `@ServiceConnection` (Spring Boot 3.1+) configures the connection automatically from the container: no `spring.datasource.url` to set.
 
 ```java
@@ -285,6 +299,8 @@ static void properties(DynamicPropertyRegistry registry) {
 - Same container at development time: `SpringApplication.from(ShopApplication::main).with(TestcontainersConfig.class).run(args)` in a test `main`, to run the application locally with its database.
 
 ## Integration test setup (real server)
+
+> **In short**: A shared base class (`RANDOM_PORT`, `RestTestClient`, Testcontainers) keeps a single context; the database is cleaned with `TRUNCATE` before each test, the tests send real JWTs signed with a test key, and external APIs are simulated with WireMock.
 
 Tests as close to production as possible: real server (`RANDOM_PORT`), real HTTP calls with `RestTestClient`, real PostgreSQL (Testcontainers), database cleaned between tests. A common base class keeps one configuration, so one context and one container for the whole suite:
 
@@ -390,6 +406,8 @@ class PaymentIT extends IntegrationTest {
 - `@DynamicPropertySource` in a subclass also changes the context configuration: keep the WireMock setup in the base class if many test classes need it.
 
 ## Test configuration and context caching
+
+> **In short**: Spring Test caches and reuses the application context for every test with the same configuration; a different set of `@MockitoBean`, properties or profiles creates a new one, so keep test configurations uniform.
 
 - **`@TestConfiguration`**: beans for tests only, added to the context with `@Import` (not picked up by the component scan of the application).
 - **Properties**: `@SpringBootTest(properties = "shop.cache.enabled=false")`, `@TestPropertySource`, or a profile with `@ActiveProfiles("test")` and `application-test.yml`.

@@ -1,5 +1,7 @@
 ## Hibernate creation and update timestamps
 
+> **In short**: `@CreationTimestamp` and `@UpdateTimestamp` (Hibernate annotations) fill timestamp columns automatically, on insert and on each update detected by dirty checking. They are bypassed by bulk JPQL updates, native SQL and JDBC; Spring Data auditing is the alternative that also records the user.
+
 `@CreationTimestamp` and `@UpdateTimestamp` (Hibernate annotations, not JPA) fill timestamp columns automatically:
 
 ```java
@@ -34,6 +36,8 @@ In a Spring application, Spring Data auditing (`@CreatedDate`, `@CreatedBy`...) 
 
 ## Hibernate fetch types: LAZY vs EAGER
 
+> **In short**: `EAGER` loads an association together with the entity, `LAZY` on first access, with an extra query. To-one associations are `EAGER` by default and to-many ones `LAZY`: make everything `LAZY` and fetch what each use case needs explicitly.
+
 The fetch type defines **when** an association is loaded:
 
 - **`EAGER`**: loaded at the same time as the owning entity, whether it's used or not.
@@ -60,6 +64,8 @@ Recommendation: map everything as `LAZY` (`@ManyToOne(fetch = FetchType.LAZY)`) 
 Caveat: `LAZY` is only a hint in the JPA spec. Hibernate ignores it on the inverse side of a `@OneToOne` (`mappedBy`, see below), unless bytecode enhancement is enabled: it has to query the other table anyway to know whether to put `null` or a proxy in the field.
 
 ## Hibernate owning side of a relationship (mappedBy)
+
+> **In short**: In a bidirectional relationship, the owning side (the `@ManyToOne`, holding the foreign key) is the only one read to write the FK; the other side declares `mappedBy` and is a mirror for navigation. Set both sides in Java (helper method); cascades are a separate mechanism that works from either side.
 
 A bidirectional relationship has two Java fields but a single foreign key in the database. JPA needs to know which field drives that column: the **owning side**.
 
@@ -108,6 +114,8 @@ Other relationships:
 
 ## Hibernate N+1 problem
 
+> **In short**: Loading N entities with 1 query, then accessing a lazy association, triggers 1 extra query per entity. Fix it with `JOIN FETCH`, an entity graph, or `@BatchSize` (which also works with pagination); switching to `EAGER` doesn't fix it.
+
 The N+1 problem happens when loading a list of N entities triggers 1 query for the list, then 1 extra query per entity to load a lazy association.
 
 ```java
@@ -138,6 +146,8 @@ Switching to `FetchType.EAGER` is not a fix: the association is then always load
 The problem also happens with `@ManyToOne`, which is `EAGER` by default (like `@OneToOne`). A JPQL query such as `findAll()` doesn't join the association, so Hibernate runs one extra query per author right after loading the books, even if `getAuthor()` is never called. With `FetchType.LAZY` (recommended), the queries are triggered when accessing `book.getAuthor()`. In both cases, the number of extra queries is the number of distinct authors, since an already loaded author is reused from the persistence context. Same fixes (`JOIN FETCH`, `@EntityGraph`), except that `@BatchSize` goes on the target entity class (`Author`), not on the field.
 
 ## JPA entity graph
+
+> **In short**: An entity graph lists the associations to load with the entity in the same query, without changing the `LAZY` mapping: `@EntityGraph(attributePaths = "books")` on a Spring Data method, or a reusable `@NamedEntityGraph` on the entity.
 
 An entity graph lists the associations to load with the entity, in the same query (`LEFT JOIN`), without changing the mapping (which stays `LAZY`). In Spring Data, it's declared with `@EntityGraph` on a repository method:
 
@@ -197,6 +207,8 @@ In Spring Data, `@EntityGraph` uses `FETCH` by default. In Hibernate, basic attr
 
 ## Hibernate JDBC batching
 
+> **In short**: With `hibernate.jdbc.batch_size`, Hibernate groups statements of the same type into JDBC batches, one round trip per batch instead of one per statement. Order inserts and updates so they can be grouped; `GenerationType.IDENTITY` disables batching for inserts, prefer a sequence.
+
 By default, Hibernate sends one SQL statement per round trip: inserting 1,000 entities means 1,000 calls to the database. JDBC batching groups the statements of the same type and sends them together (`PreparedStatement.addBatch()` / `executeBatch()`), one round trip per batch. Disabled by default:
 
 ```properties
@@ -228,6 +240,8 @@ Pitfalls:
 - **Check it really works**: SQL logs show each statement even when batched. Use `hibernate.generate_statistics=true` (number of JDBC batches) or a proxy like datasource-proxy. With PostgreSQL, `reWriteBatchedInserts=true` on the JDBC URL also rewrites a batch into a single multi-row `INSERT`.
 
 ## Hibernate StatelessSession
+
+> **In short**: A `StatelessSession` has no persistence context: no first-level cache, dirty checking, lazy loading or cascades, each call runs its SQL immediately. Suited for bulk processing of large volumes without filling memory; Hibernate 7 adds `insertMultiple()` for batched inserts.
 
 A `StatelessSession` is a Hibernate session **without persistence context**: no first-level cache, no dirty checking, no lazy loading, no cascades (see [Hibernate cache](HIBERNATE_CACHE.md)). Each operation is an explicit command that runs its SQL immediately: `insert()`, `update()`, `delete()`, `upsert()`, `get()`. Entities returned are plain detached objects: modifying one does nothing until `update()` is called. Associations that aren't fetched in the query stay unloaded, unless loaded explicitly with `fetch()`.
 

@@ -1,5 +1,7 @@
 ## JUnit: what it is and how it works
 
+> **In short**: JUnit is Java's standard testing framework: `@Test` methods, assertions, a new test class instance per test. The JUnit Platform runs the tests for the tools (IDE, Maven, Gradle) and delegates to engines, Jupiter being the engine of JUnit 5 / 6.
+
 JUnit is the standard testing framework for Java: tests are methods annotated with `@Test`, run by JUnit, which reports which ones pass or fail. A test fails when an assertion fails or an exception is thrown. Current versions: JUnit 5 (2017) introduced the **Jupiter** API (`org.junit.jupiter.api`); JUnit 6 (2025) keeps the same API, with Java 17 as minimum.
 
 ```java
@@ -34,6 +36,8 @@ class PriceCalculatorTest {
 Typical use cases: unit tests of business logic (a service with mocked dependencies, via Mockito), checking that invalid input throws the right exception, regression tests reproducing a fixed bug, integration tests with Spring (`@SpringBootTest`, `@DataJpaTest`), which are JUnit tests extended by Spring.
 
 ## Lifecycle and organization
+
+> **In short**: `@BeforeEach` / `@AfterEach` run around each test, `@BeforeAll` / `@AfterAll` once per class (`static`, since each test gets a new instance); `@DisplayName`, `@Nested`, `@Tag` and `@Disabled` organize the tests.
 
 ```java
 class OrderServiceTest {
@@ -71,6 +75,8 @@ class OrderServiceTest {
 
 ## Parameterized tests
 
+> **In short**: `@ParameterizedTest` runs the same test with several inputs, each reported separately: `@ValueSource`, `@CsvSource`, `@EnumSource`, `@MethodSource`.
+
 The same test run with several inputs, each reported as a separate test:
 
 ```java
@@ -105,6 +111,8 @@ Other sources: `@EnumSource` (each value of an enum), `@NullAndEmptySource` (add
 
 ## JUnit Platform and engines
 
+> **In short**: The Platform is a facade: tools only talk to its Launcher API, and each engine (Jupiter, Vintage, Spock, Cucumber) implements the TestEngine API to discover and run the tests written with its own programming model.
+
 JUnit is split in two layers. The **Platform** is a facade between the tools and the tests: IDEs, Maven Surefire and Gradle only talk to its `Launcher`. An **engine** understands one programming model (its annotations, its rules) and runs the tests written with it: Jupiter (JUnit 5/6), Vintage (JUnit 4, deprecated in JUnit 6), or third-party engines (Spock, Cucumber, Kotest). Like JDBC: one API for the tools, one driver per framework.
 
 The Platform itself has two sides:
@@ -135,6 +143,8 @@ The import of the annotation decides which engine finds a test: `org.junit.jupit
 Why this split: in JUnit 4, IDEs and build tools relied on JUnit's internals, so JUnit could hardly evolve without breaking them, and every other framework needed its own integration in every tool. Now tools integrate once with the Platform, any framework providing an engine works everywhere, and several engines can run in the same project, which allowed migrating from JUnit 4 to 5 progressively (Vintage and Jupiter side by side).
 
 ## Extensions
+
+> **In short**: An extension (`@ExtendWith`) hooks into the test lifecycle to share a behavior across tests, by composition rather than inheritance: callbacks, parameter injection (`ParameterResolver`), test instance post-processing, conditions. It's how Mockito and Spring integrate with JUnit.
 
 An extension shares a behavior across many tests, declared once instead of being called manually in each test. It's JUnit's plugin mechanism, hooking into the test lifecycle like a servlet filter or an aspect for tests.
 
@@ -221,6 +231,8 @@ A parameter no resolver supports fails the test with a `ParameterResolutionExcep
 
 ## ExtensionContext
 
+> **In short**: The `ExtensionContext` passed to every extension method describes where the execution is (class, method, display name, tags) and gives access to a `Store`, where extensions keep their state, scoped by a `Namespace` to avoid collisions.
+
 The `ExtensionContext` is the object JUnit passes to every extension method (`beforeEach(context)`, `resolveParameter(..., context)`...). It describes where the execution currently is, and gives access to everything attached to it:
 
 ```java
@@ -260,6 +272,8 @@ public void beforeAll(ExtensionContext context) {
 ```
 
 ## Other useful features
+
+> **In short**: `@TempDir`, `@Timeout`, assumptions to skip a test when a precondition isn't met, dynamic tests generated at runtime, and parallel execution.
 
 - **`@TempDir`**: injects a temporary directory, deleted after the test.
 - **`@Timeout(2)`**: fails the test if it takes more than 2 seconds; `assertTimeout()` for a block of code.

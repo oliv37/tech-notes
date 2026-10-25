@@ -1,5 +1,7 @@
 ## What a signal is, and why Angular added them
 
+> **In short**: A signal is a reactive value read with `count()` and written with `set` / `update`. It gives Angular fine-grained reactivity: Angular knows which templates depend on which values, so it refreshes only what changed, without Zone.js and its whole-tree change detection.
+
 A **signal** is a reactive wrapper around a value: the code that reads it is tracked as a dependency, so Angular knows what to refresh when the value changes (see below). It is read by calling it like a function, and written with `set` / `update`:
 
 ```ts
@@ -23,6 +25,8 @@ History: developer preview in Angular 16, `signal` / `computed` stable in Angula
 
 ## How signals work: the dependency graph
 
+> **In short**: Reading a signal during a reactive run (`computed`, `effect`, template) records it as a dependency. A change notifies only live consumers (effects, templates and the computeds they depend on); a `computed` is recomputed lazily, on read, only if a producer's version changed.
+
 Signals form a graph of **producers** (signals, computed) and **consumers** (computed, effects, templates):
 
 ```text
@@ -42,6 +46,8 @@ lastName  ─┘
 - **Equality**: a new value equal to the old one (`Object.is` by default, or the `equal` option) changes neither the version nor anything downstream; a `computed` recomputed to an equal value doesn't propagate either.
 
 ## signal, computed, effect
+
+> **In short**: `signal()` holds writable state, `computed()` derives read-only state (lazy, memoized), `effect()` runs side effects towards non-reactive APIs when the signals it reads change. Update signals immutably, and prefer `computed` / `linkedSignal` over effects to propagate state.
 
 **`signal()`**: writable state.
 
@@ -112,6 +118,8 @@ effect(() => {
 
 ## Signal-based component APIs: input, model, output, queries
 
+> **In short**: `input()`, `model()` (two-way binding) and the queries `viewChild()` / `contentChild()` are signals, so a `computed` can derive from them without `ngOnChanges` or `ngAfterViewInit`. `output()` replaces `@Output()` + `EventEmitter`, but is an event emitter, not a signal.
+
 Component inputs and queries are signals too, so a `computed` can derive from them, without `ngOnChanges`.
 
 ```ts
@@ -162,6 +170,8 @@ No more `ngOnChanges` to react to an input, nor `ngAfterViewInit` to wait for a 
 
 ## linkedSignal: writable state derived from another signal
 
+> **In short**: `linkedSignal()` is writable like a `signal`, but reset whenever its source changes, like a `computed`. Typical use: a selection reset (or kept, using the previous value) when the list of options changes.
+
 A `computed` can't be written; a `signal` doesn't follow another one. **`linkedSignal()`** is both: writable, and **reset** each time its source changes. Typical case: a selection that must be reset when the list changes.
 
 ```ts
@@ -207,6 +217,8 @@ selectedOption = linkedSignal<
 It replaces the `effect(() => this.selected.set(...))` pattern, which is discouraged.
 
 ## Async data: resource, rxResource, httpResource
+
+> **In short**: A resource loads data asynchronously from reactive `params`, and exposes `value()`, `isLoading()`, `error()` and `status()` as signals. It reloads when the params change, cancelling the previous load. `httpResource()` uses `HttpClient`, `rxResource()` an Observable; resources are meant for reading, not writing.
 
 Signals are synchronous: a **resource** brings asynchronous loading into the signal graph. It reloads when its `params` change, and exposes the value, the status and the error as signals.
 
@@ -297,6 +309,8 @@ Resources are for **reading** data. For writes (POST, PUT), call `HttpClient` fr
 
 ## RxJS interop: toSignal and toObservable
 
+> **In short**: `toSignal()` turns an Observable into a signal (subscribed for the component's lifetime), `toObservable()` the opposite. Signals for state and templates, RxJS for complex event flows (`debounceTime`, `switchMap`), converted at the boundary.
+
 Signals and RxJS coexist (`@angular/core/rxjs-interop`):
 
 ```ts
@@ -330,11 +344,15 @@ The trend: signals for the state and the templates, RxJS kept for complex event 
 
 ## Other signal APIs
 
+> **In short**: `afterRenderEffect()` for DOM work after rendering, Signal Forms (`@angular/forms/signals`) for forms whose state is signals, and utilities such as `isSignal()` and the `equal` option.
+
 - **`afterRenderEffect()`**: an effect run after the DOM has been rendered, to read or write the DOM (measure an element, draw on a canvas), with phases (`earlyRead`, `write`, `mixedReadWrite`, `read`).
 - **Signal Forms** (`@angular/forms/signals`, experimental in Angular 21): forms whose model and validation state are signals: `form(signal({ email: '' }), path => { required(path.email); email(path.email); })`.
 - Utilities: `isSignal()`, `isWritableSignal()`, `untracked()`, the `equal` option on `signal` / `computed`.
 
 ## Summary of the signal APIs
+
+> **In short**: The signal APIs at a glance, with their package: state (`signal`, `computed`, `linkedSignal`, `effect`), components (`input`, `model`, `output`, queries), async (`resource`, `httpResource`, `rxResource`) and RxJS interop.
 
 | API                                                                    | Package                      | Role                                        |
 | ---------------------------------------------------------------------- | ---------------------------- | ------------------------------------------- |
@@ -356,6 +374,8 @@ The trend: signals for the state and the templates, RxJS kept for complex event 
 | `form()`                                                               | `@angular/forms/signals`     | Signal Forms                                |
 
 ## Pitfalls
+
+> **In short**: Mutating a signal's value in place notifies nothing, effects used to sync state create hidden flows, signals read after an `await` aren't tracked, and a `computed` must stay pure.
 
 - **Mutation in place**: `items().push(x)` or `user().name = 'x'` doesn't notify anything: `update(items => [...items, x])`, `update(u => ({ ...u, name: 'x' }))`.
 - **Effects to sync state**: setting a signal from an effect creates hidden flows and extra change detections: prefer `computed` or `linkedSignal`.

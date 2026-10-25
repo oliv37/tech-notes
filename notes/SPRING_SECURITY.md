@@ -1,5 +1,7 @@
 ## What Spring Security is
 
+> **In short**: Spring Security handles authentication (who are you? → `401`) and authorization (are you allowed? → `403`) through a chain of servlet filters, plus protections against common attacks (CSRF, security headers). With Spring Boot, everything is secured by default; a `SecurityFilterChain` bean replaces the default rules.
+
 Spring Security secures a Spring application, mainly at the HTTP level:
 
 - **Authentication**: who is calling? (login/password, JWT token, OAuth2 login, certificate).
@@ -14,51 +16,39 @@ Spring Security secures a Spring application, mainly at the HTTP level:
 
 With Spring Boot, adding `spring-boot-starter-security` secures everything by default: every endpoint requires authentication, with a form login and HTTP Basic, a single user `user` with a password generated and printed at startup (`spring.security.user.name` / `password` to set them). Declaring a `SecurityFilterChain` bean replaces this default configuration (see below).
 
-## Architecture: the security filter chain
+## The security filter chain
 
-Spring Security is a set of servlet filters (see [Servlet](SERVLET.md)), run before the `DispatcherServlet`:
+> **In short**: Spring Security is a set of servlet filters run before the `DispatcherServlet`. `DelegatingFilterProxy` bridges the container and Spring, `FilterChainProxy` picks the matching `SecurityFilterChain`, whose filters authenticate the request, then `AuthorizationFilter` checks the rules; `ExceptionTranslationFilter` turns failures into `401` / `403`.
 
 ```text
-Request → [container filters] → DelegatingFilterProxy → FilterChainProxy → SecurityFilterChain (filters 1..n) → DispatcherServlet → controller
+Request → DelegatingFilterProxy → FilterChainProxy → SecurityFilterChain (filters 1..n) → DispatcherServlet → controller
 ```
 
-- **`DelegatingFilterProxy`**: a standard servlet filter registered in the container, that delegates to a Spring bean (`springSecurityFilterChain`). It bridges the container and the Spring context.
-- **`FilterChainProxy`**: that bean. It picks the first `SecurityFilterChain` matching the request and runs its filters.
-- **`SecurityFilterChain`**: an ordered list of security filters, built with `HttpSecurity`. An application can have several chains, e.g. one for `/api/**` and one for the rest (see below).
+- **`DelegatingFilterProxy`**: a servlet filter registered in the container (see [Servlet](SERVLET.md)), delegating to the Spring bean `springSecurityFilterChain`.
+- **`FilterChainProxy`**: that bean; picks the first `SecurityFilterChain` matching the request.
+- **`SecurityFilterChain`**: an ordered list of filters, built with `HttpSecurity`; each feature adds its filter (`httpBasic()` → `BasicAuthenticationFilter`).
 
-Each feature enabled on `HttpSecurity` adds its filter: `httpBasic()` adds `BasicAuthenticationFilter`, `csrf()` adds `CsrfFilter`. The filter list is logged at startup at DEBUG level, and each filter invocation at TRACE level, useful to find where a `401` or `403` comes from:
+Main filters, in order:
 
-```properties
-logging.level.org.springframework.security=TRACE
-```
+| Filter | Role |
+|---|---|
+| `SecurityContextHolderFilter` | loads the `SecurityContext` (from the session) for the request, clears it at the end |
+| `HeaderWriterFilter` | security headers: `X-Content-Type-Options`, `X-Frame-Options`, HSTS... |
+| `CorsFilter` | answers CORS preflight requests |
+| `CsrfFilter` | checks the CSRF token on `POST`, `PUT`, `DELETE`... |
+| `LogoutFilter` | `POST /logout` |
+| `UsernamePasswordAuthenticationFilter` | form login: `POST /login` |
+| `BearerTokenAuthenticationFilter` / `BasicAuthenticationFilter` | `Authorization: Bearer <jwt>` / `Basic base64(user:password)` |
+| `AnonymousAuthenticationFilter` | nobody authenticated: sets an anonymous `Authentication` |
+| `ExceptionTranslationFilter` | security exceptions → `401` / `403` (see below) |
+| `AuthorizationFilter` | last: checks the `authorizeHttpRequests` rules |
 
-## Main security filters
-
-In order (the default chain of Spring Boot with form login and HTTP Basic):
-
-| Filter                                                                  | Role                                                                                                                  |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `DisableEncodeUrlFilter`                                                | prevents the session id from being added to URLs                                                                      |
-| `WebAsyncManagerIntegrationFilter`                                      | propagates the `SecurityContext` to async requests (`Callable`)                                                       |
-| `SecurityContextHolderFilter`                                           | loads the `SecurityContext` (from the session) into the `SecurityContextHolder` for the request, clears it at the end |
-| `HeaderWriterFilter`                                                    | adds security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Cache-Control`, HSTS on HTTPS                    |
-| `CorsFilter`                                                            | handles CORS preflight requests (if `cors()` is enabled)                                                              |
-| `CsrfFilter`                                                            | checks the CSRF token on `POST`, `PUT`, `DELETE`...                                                                   |
-| `LogoutFilter`                                                          | handles `POST /logout`: clears the session and the context                                                            |
-| `UsernamePasswordAuthenticationFilter`                                  | form login: authenticates `POST /login` (`username`, `password`)                                                      |
-| `DefaultLoginPageGeneratingFilter`, `DefaultLogoutPageGeneratingFilter` | generate the default login / logout pages                                                                             |
-| `BearerTokenAuthenticationFilter`                                       | reads `Authorization: Bearer <token>` (OAuth2 resource server, JWT)                                                   |
-| `BasicAuthenticationFilter`                                             | reads `Authorization: Basic base64(user:password)`                                                                    |
-| `RequestCacheAwareFilter`                                               | after login, replays the request saved before the redirect to the login page                                          |
-| `SecurityContextHolderAwareRequestFilter`                               | implements `request.isUserInRole()`, `getUserPrincipal()`                                                             |
-| `AnonymousAuthenticationFilter`                                         | if nobody is authenticated, sets an anonymous `Authentication`                                                        |
-| `SessionManagementFilter`                                               | session fixation protection, concurrent session control (when configured)                                             |
-| `ExceptionTranslationFilter`                                            | turns security exceptions thrown further down into `401` / `403` (see below)                                          |
-| `AuthorizationFilter`                                                   | last filter: checks the `authorizeHttpRequests` rules, throws `AccessDeniedException` if refused                      |
-
-The authentication filters only try to authenticate the request when their credentials are present: without an `Authorization` header, `BasicAuthenticationFilter` does nothing, and the request reaches `AuthorizationFilter` as anonymous. The full order is defined in `FilterOrderRegistration`.
+- An authentication filter only acts when its credentials are present: without `Authorization` header, the request reaches `AuthorizationFilter` as anonymous.
+- Debugging: `logging.level.org.springframework.security=TRACE` logs each filter invocation, to find where a `401` / `403` comes from.
 
 ## SecurityContext and Authentication
+
+> **In short**: The authenticated user is an `Authentication` (principal, authorities) stored in the `SecurityContext`, held by the `SecurityContextHolder` in a `ThreadLocal` for the duration of the request. It's kept in the HTTP session for a login, or rebuilt from the token on each request for a stateless API.
 
 The authenticated user is stored in the **`SecurityContextHolder`**, a `ThreadLocal` by default, filled by the filters for the duration of the request:
 
@@ -86,7 +76,9 @@ public UserDto me(@AuthenticationPrincipal UserDetails user) {
 
 ## Configuring a SecurityFilterChain
 
-Since Spring Security 6, the configuration is a `SecurityFilterChain` bean, with the lambda DSL (`WebSecurityConfigurerAdapter` is removed; `and()` and `authorizeRequests()` are removed in Spring Security 7).
+> **In short**: The security rules are a `SecurityFilterChain` bean configured with `HttpSecurity` and the lambda DSL: `authorizeHttpRequests` rules checked in order (first match wins), then the authentication methods (form login, HTTP Basic, JWT). Several chains can coexist, each limited to some URLs with `securityMatcher`.
+
+`WebSecurityConfigurerAdapter` is removed since Spring Security 6.
 
 ```java
 @Configuration
@@ -136,6 +128,8 @@ SecurityFilterChain webChain(HttpSecurity http) throws Exception {
 
 ## Authentication: AuthenticationManager, UserDetailsService, PasswordEncoder
 
+> **In short**: An authentication filter passes the credentials to the `AuthenticationManager` (`ProviderManager`), which delegates to an `AuthenticationProvider`. For login/password, the `DaoAuthenticationProvider` loads the user with the application's `UserDetailsService` and checks the password hash with the `PasswordEncoder` (BCrypt).
+
 An authentication filter extracts the credentials from the request and passes them to the **`AuthenticationManager`**:
 
 ```text
@@ -179,6 +173,8 @@ PasswordEncoder passwordEncoder() {
 
 ## Method security
 
+> **In short**: `@EnableMethodSecurity` + `@PreAuthorize("hasRole('ADMIN')")` checks rules on methods, with SpEL access to the current user and the arguments. Proxy-based like `@Transactional`; it protects the business logic whatever the entry point, where URL rules only protect HTTP endpoints.
+
 Rules on service or controller methods, with the current user and the arguments:
 
 ```java
@@ -207,6 +203,8 @@ public class OrderService {
 
 ## 401 vs 403: ExceptionTranslationFilter
 
+> **In short**: `401`: not authenticated, handled by the `AuthenticationEntryPoint` (401 or redirect to the login page). `403`: authenticated but not allowed, handled by the `AccessDeniedHandler`. `ExceptionTranslationFilter` makes the translation; these errors happen in the filters, so a `@RestControllerAdvice` doesn't see them.
+
 `AuthorizationFilter` (or method security) throws an exception, and `ExceptionTranslationFilter`, placed just before it, turns it into a response:
 
 | Exception                 | Caller                                 | Handled by                 | Default response                                                           |
@@ -225,6 +223,8 @@ http.exceptionHandling(ex -> ex
 - The `ERROR` dispatch to Spring Boot's `/error` page goes through the security chain too: permit it (`.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()`), otherwise an anonymous client gets a `401` instead of the real error (see [Spring Web MVC](SPRING_WEBMVC.md)).
 
 ## CSRF and CORS
+
+> **In short**: CSRF: another site makes the browser send a request with the session cookie; Spring requires a token on state-changing requests. Keep it with a session cookie, disable it for a stateless API using an `Authorization` header. CORS: allows a front-end on another origin to call the API; configure it in Spring Security, since the preflight must be answered before authentication.
 
 **CSRF** (Cross-Site Request Forgery): a malicious site makes the user's browser send a request to the application, with the session cookie sent automatically. Spring Security requires a token on state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`), which the other site can't read.
 
@@ -253,6 +253,8 @@ CorsConfigurationSource corsConfigurationSource() {
 Configured only in Spring MVC (`@CrossOrigin`, `WebMvcConfigurer`), CORS comes too late: the preflight is rejected by the security chain first.
 
 ## Stateless REST API with JWT
+
+> **In short**: As an OAuth2 resource server, the API validates the JWT sent in `Authorization: Bearer` on each request (signature with the issuer's public key, expiry, issuer), without session. Scopes become `SCOPE_...` authorities; `issuer-uri` is enough to configure it.
 
 An API called by an Angular front-end or other services usually receives a JWT issued by an authorization server (Keycloak, Auth0, Spring Authorization Server): the OAuth2 **resource server** support validates it on each request, without session.
 
@@ -286,6 +288,8 @@ SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
 - `STATELESS`: no HTTP session, the context is rebuilt from the token on each request. Logout = token expiry (short-lived access tokens, refresh tokens handled by the client).
 
 ## Spring Security 7 (Spring Boot 4)
+
+> **In short**: Lambda DSL only (`and()` and `authorizeRequests()` removed), `PathPatternRequestMatcher` replaces the Ant matchers, initial MFA support, `csrf.spa()`, and Spring Authorization Server is now part of Spring Security.
 
 - Removed: `and()` in `HttpSecurity` (lambda DSL only), `authorizeRequests()` (use `authorizeHttpRequests()`), `AntPathRequestMatcher` / `MvcRequestMatcher` (replaced by `PathPatternRequestMatcher`, the same path syntax as Spring MVC), the OAuth2 password grant.
 - New: initial multi-factor authentication support, `csrf.spa()` for SPAs, Password4j-based password encoders, OAuth2 support for HTTP service clients (`@ClientRegistrationId`).

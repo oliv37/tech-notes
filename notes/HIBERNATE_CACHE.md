@@ -1,5 +1,7 @@
 ## First-level cache (persistence context)
 
+> **In short**: The first-level cache is the persistence context of each `EntityManager`: an entity loaded twice by id in the same transaction is read from the database once. Always active, and limited to one transaction, so never shared between requests.
+
 The first-level cache is the persistence context itself: every `EntityManager` (Hibernate `Session`) keeps a map of the entities it has loaded, keyed by type and id. It's always active and can't be disabled. In Spring, an `EntityManager` lives as long as the transaction, so the cache only lasts for one transaction and is never shared between requests or users.
 
 ```java
@@ -18,6 +20,8 @@ public void example() {
 Pitfalls: in a batch processing thousands of entities in one transaction, the context grows until it runs out of memory and dirty checking gets slower; call `flush()` then `clear()` regularly. In a long transaction, entities can also become stale, since the context doesn't see changes committed by others.
 
 ## Second-level cache (L2)
+
+> **In short**: The L2 cache is shared by the whole application (`EntityManagerFactory`): entities loaded by one request are reused by the next ones without a query. Disabled by default; it needs a provider (Ehcache, Caffeine, Infinispan...) and `@Cache` on each cached entity.
 
 The second-level cache is shared by all `EntityManager`s of the application (it belongs to the `EntityManagerFactory`), so an entity loaded by one request can be reused by the next ones without hitting the database. It's inactive by default: it needs a cache provider (JCache with Ehcache, Caffeine, Infinispan, Hazelcast...) and must be enabled per entity.
 
@@ -46,6 +50,8 @@ Collections (`@OneToMany`) are cached separately with `@Cache` on the field, and
 
 ## Query cache
 
+> **In short**: The query cache stores the ids returned by a query for given parameters, enabled per query; the entities themselves come from the L2 cache. It's invalidated whenever one of the queried tables changes.
+
 The query cache stores the result of a JPQL query for given parameters. It's disabled by default and enabled per query:
 
 ```properties
@@ -60,6 +66,8 @@ List<Country> findByContinent(String continent);
 It only stores the ids of the results; the entities are then read from the L2 cache, so they must be cached too (otherwise one query per result). Its invalidation is coarse: Hibernate records the last update time of each table, and any insert, update or delete on a table invalidates **all** cached queries reading it. It's only worth it for frequently run queries on tables that rarely change.
 
 ## When to use the L2 cache, and its pitfalls
+
+> **In short**: Worth it for data read often and modified rarely (reference data). Pitfalls: separate local caches on several instances, changes made outside Hibernate, bulk queries invalidating whole regions. Spring's `@Cacheable` on a service method is often simpler.
 
 The L2 cache pays off for data read often and modified rarely: reference data, configuration, catalogs. For frequently modified entities, invalidations and locks cost more than they save.
 

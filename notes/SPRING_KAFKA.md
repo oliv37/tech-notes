@@ -1,5 +1,7 @@
 ## Spring Kafka setup
 
+> **In short**: Spring Kafka provides `KafkaTemplate` to produce and `@KafkaListener` to consume, configured by Spring Boot through `spring.kafka.*` properties: bootstrap servers, serializers (`JacksonJsonSerializer` with Jackson 3), consumer group. `ErrorHandlingDeserializer` keeps an unreadable message from blocking the consumer.
+
 Spring for Apache Kafka provides `KafkaTemplate` to produce and `@KafkaListener` to consume (see [Kafka](KAFKA.md) for the concepts). With Spring Boot, the configuration is done with `spring.kafka.*` properties:
 
 ```yaml
@@ -35,6 +37,8 @@ NewTopic ordersTopic() {
 
 ## Producing messages: KafkaTemplate
 
+> **In short**: `kafkaTemplate.send(topic, key, value)` is asynchronous and returns a `CompletableFuture`, which must be checked, otherwise failures go unnoticed. The key (the entity id) decides the partition and so the ordering; the database and Kafka aren't atomic, hence the outbox pattern.
+
 ```java
 public record OrderCreated(String orderId, String customer, BigDecimal amount) {}
 
@@ -69,6 +73,8 @@ public class OrderEventPublisher {
 
 ## Consuming messages: @KafkaListener
 
+> **In short**: `@KafkaListener(topics, groupId)` methods run in a listener container that polls Kafka and calls them for each record, sequentially per partition; `concurrency` adds consumers to the group, useful up to the number of partitions.
+
 ```java
 @Component
 public class BillingListener {
@@ -90,6 +96,8 @@ public class BillingListener {
 - **Batch listener**: `@KafkaListener(topics = "orders", batch = "true")` with a `List<OrderCreated>` parameter, to process several records at once (bulk insert).
 
 ## Offset commit: AckMode
+
+> **In short**: Spring commits the offsets itself after the listener returns (`AckMode.BATCH` by default), or on `ack.acknowledge()` in manual mode: at-least-once delivery, so listeners must be idempotent.
 
 Spring disables Kafka's auto-commit (`enable.auto.commit=false`) and commits the offsets itself, **after** the listener returns: at-least-once delivery.
 
@@ -116,6 +124,8 @@ public void listen(OrderCreated event, Acknowledgment ack) {
 Whatever the mode, a crash before the commit replays the messages: the listener must be **idempotent** (check whether the `orderId` was already processed, upsert).
 
 ## Error handling: retries and dead letter topic
+
+> **In short**: The `DefaultErrorHandler` retries a failed record (blocking its partition), then hands it to a recoverer, typically `DeadLetterPublishingRecoverer` towards a `.DLT` topic. `@RetryableTopic` retries through separate retry topics instead, without blocking the partition but losing the order.
 
 When the listener throws an exception, the **`DefaultErrorHandler`** retries the record: by default 9 retries without delay (10 attempts), then the record is logged and skipped, and the partition moves on. The retries are **blocking**: the partition waits meanwhile.
 
@@ -157,6 +167,8 @@ public void onDlt(OrderCreated event, @Header(KafkaHeaders.EXCEPTION_MESSAGE) St
 | Suited for               | short retries (a few seconds), strict ordering | long retries (an API down for minutes) |
 
 ## Testing with Kafka
+
+> **In short**: An integration test with a real broker (Testcontainers + `@ServiceConnection`), sending a message and waiting for the listener's effect with Awaitility, never `Thread.sleep()`; `@EmbeddedKafka` is a lighter, in-memory alternative.
 
 An integration test with a real broker, using Testcontainers and `@ServiceConnection` (see [Spring Test](SPRING_TEST.md)): `spring.kafka.bootstrap-servers` is set automatically.
 

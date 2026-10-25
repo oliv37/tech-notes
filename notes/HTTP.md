@@ -1,5 +1,7 @@
 ## HTTP caching: Cache-Control
 
+> **In short**: `Cache-Control` tells clients and proxies whether and how long a response can be reused: `max-age` (reuse without asking), `no-cache` (store but revalidate each time), `no-store` (never store), `private` / `public`, `immutable`. Typical SPA setup: `index.html` with `no-cache`, hashed bundles cached for a year.
+
 The server tells the client (browser, proxy, CDN) whether and how long a response can be reused, with the `Cache-Control` response header:
 
 ```
@@ -15,6 +17,8 @@ Cache-Control: max-age=3600
 Typical setup for an Angular app: `index.html` with `no-cache` (always the latest version, which references the new hashed bundles), hashed bundles with `max-age=31536000, immutable`.
 
 ## Conditional requests: ETag and Last-Modified
+
+> **In short**: To revalidate a cached response, the client sends back the validator it received (`If-None-Match` with the `ETag`, or `If-Modified-Since` with `Last-Modified`); if nothing changed, the server answers `304 Not Modified` without a body. `If-Match` on a write gives optimistic locking (`412` if the resource changed).
 
 Once a cached response is stale (or with `no-cache`), the client doesn't download it again blindly: it asks the server whether it changed. If not, the server answers **`304 Not Modified`** with no body, and the client reuses its copy. Saves bandwidth, not the round trip.
 

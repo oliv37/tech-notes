@@ -1,5 +1,7 @@
 ## RestClient: calling a REST API
 
+> **In short**: `RestClient` (Spring 6.1+) is Spring's synchronous HTTP client with a fluent API, replacing `RestTemplate`. Build it from the `RestClient.Builder` auto-configured by Spring Boot; 4xx / 5xx responses throw exceptions, customizable with `onStatus`.
+
 `RestClient` (Spring Framework 6.1+) is the synchronous HTTP client of Spring, with a fluent API. It replaces `RestTemplate` (in maintenance, planned for deprecation) for blocking code; `WebClient` stays the reactive client.
 
 Spring Boot auto-configures a `RestClient.Builder` (message converters, Jackson, timeouts from the properties, observability): inject the builder rather than calling `RestClient.create()`, which skips all of it.
@@ -46,6 +48,8 @@ public class PaymentClient {
 
 ## HTTP service interfaces (@HttpExchange)
 
+> **In short**: A declarative client: an interface annotated with `@GetExchange`, `@PostExchange`..., implemented at runtime by a proxy over `RestClient`. Since Spring Framework 7 / Boot 4, `@ImportHttpServices` registers these interfaces as beans.
+
 A declarative client: an interface with annotated methods, implemented at runtime by a proxy that delegates to a `RestClient` (same idea as Feign).
 
 ```java
@@ -81,6 +85,8 @@ public class OrderService {
 The base URL can be written on the interface (`@HttpExchange(url = "https://payment.example.com")`), but it's better taken from the configuration (see below).
 
 ## Several clients with a different URL each
+
+> **In short**: With HTTP service interfaces, each remote API is a group (`@ImportHttpServices(group = "payment", ...)`), configured with `spring.http.serviceclient.<group>.base-url`. With plain `RestClient`, declare one bean per API, each with its URL from `@ConfigurationProperties`.
 
 With HTTP service interfaces, each remote API is a **group**: the interfaces of a group share the same `RestClient`, configured under `spring.http.serviceclient.<group>` (Spring Boot 4).
 

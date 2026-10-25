@@ -1,5 +1,7 @@
 ## What Spring Boot is
 
+> **In short**: Spring Boot configures and runs a Spring application with almost no setup: auto-configuration based on the classpath and properties, starters, an embedded server in an executable jar, externalized configuration, Actuator. It adds no new programming model: it's still Spring underneath.
+
 Spring Boot is a layer on top of the Spring Framework that makes a Spring application ready to run with almost no configuration. Spring provides the features (dependency injection, transactions, MVC, data access), but leaves the setup to the developer: declare the `DataSource`, the `EntityManagerFactory`, the transaction manager, Jackson, deploy a WAR to a Tomcat server. Spring Boot does that setup, with sensible defaults that can be overridden.
 
 What it adds to Spring:
@@ -24,6 +26,8 @@ In short: Spring is the framework, Spring Boot is the opinionated way to configu
 
 ## Spring Boot 4 new features
 
+> **In short**: Spring Boot 4 is based on Spring Framework 7 and Jakarta EE 11: modularized auto-configuration and starters, HTTP service clients, API versioning, built-in retry, JSpecify null safety, Jackson 3, `@MockitoBean` replacing the removed `@MockBean`.
+
 Spring Boot 4.0 (November 2025) is based on Spring Framework 7 and Jakarta EE 11 (Servlet 6.1, JPA 3.2, Tomcat 11). Java 17 remains the minimum, Java 25 is supported.
 
 - **Modularization**: auto-configuration is split into small modules (`spring-boot-webmvc`, `spring-boot-data-jpa`...), one per technology, with matching starters and test starters. Smaller jars, and only the auto-configuration of the technologies actually used. Some starters are renamed: `spring-boot-starter-web` becomes `spring-boot-starter-webmvc`, `spring-boot-starter-aop` becomes `spring-boot-starter-aspectj`. Flyway and Liquibase now need their own starter. `spring-boot-starter-classic` brings everything back, to ease migration.
@@ -38,6 +42,8 @@ Spring Boot 4.0 (November 2025) is based on Spring Framework 7 and Jakarta EE 11
 - **Dependency upgrades**: Spring Security 7, Spring Data 2025.1, Hibernate 7, Spring Kafka 4, JUnit 6, Testcontainers 2.
 
 ## Profiles in Spring Boot
+
+> **In short**: `@Profile` and profile activation come from Spring; Spring Boot adds the configuration per profile: `application-prod.yml`, `spring.config.activate.on-profile` sections, profile groups. A profile value overrides the default one.
 
 `@Profile` and profile activation come from Spring Framework (see [Spring](SPRING.md)). Spring Boot adds the configuration loaded per profile:
 
@@ -65,6 +71,8 @@ shop:
 A profile-specific value overrides the one of `application.yml`; with several active profiles, the last one wins.
 
 ## Registering a servlet filter (FilterRegistrationBean)
+
+> **In short**: Spring Boot registers every `Filter` bean in the container, for all URLs. A `FilterRegistrationBean` controls the URL patterns, the order and the dispatcher types, or disables the automatic registration (`setEnabled(false)`) for a filter used only inside the Spring Security chain.
 
 With the embedded server, Spring Boot registers every `Filter` bean in the container (see [Servlet](SERVLET.md)): a filter declared as a `@Component` applies to every URL (`/*`), with no further configuration.
 
@@ -126,6 +134,8 @@ FilterRegistrationBean<JwtFilter> jwtFilterRegistration(JwtFilter filter) {
 
 ## Conditional auto-configuration (@ConditionalOn...)
 
+> **In short**: Auto-configurations are `@AutoConfiguration` classes whose beans are created under conditions: `@ConditionalOnClass`, `@ConditionalOnProperty`, `@ConditionalOnMissingBean`... `@ConditionalOnMissingBean` lets the application replace a default bean simply by declaring its own.
+
 Spring Boot's auto-configuration is a set of `@AutoConfiguration` classes (Boot 2.7+, meta-annotated with `@Configuration(proxyBeanMethods = false)`, with `before` / `after` attributes to order them), listed in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Their beans are created only under conditions, built on Spring's `@Conditional` (see [Spring](SPRING.md)):
 
 | Annotation | The bean is created if... |
@@ -157,6 +167,8 @@ public class DataSourceAutoConfiguration {
 In short: `@Conditional` (Spring) registers a bean depending on a condition evaluated at startup, `@Profile` being one; Spring Boot's `@ConditionalOn...` are the mechanism of auto-configuration, and `@ConditionalOnMissingBean` lets the application replace a default bean by declaring its own.
 
 ## Spring retry (@Retryable)
+
+> **In short**: Since Spring Framework 7, `@Retryable` (enabled by `@EnableResilientMethods`) or `RetryTemplate` call a failing method again, with backoff, for transient errors. It's proxy-based, for idempotent operations only, and must wrap the transaction so that each attempt runs in a new one.
 
 Since Spring Framework 7 (Spring Boot 4), retry is built into the core (`org.springframework.resilience`): a failing method is called again automatically, for transient errors (timeout, `503`, lost connection).
 

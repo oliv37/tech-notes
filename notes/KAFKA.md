@@ -1,5 +1,7 @@
 ## What Kafka is
 
+> **In short**: Kafka is a distributed event log: producers append messages to topics, consumers read them at their own pace. Messages stay on disk for the retention period, so several applications can read the same data and replay it; built for high throughput and horizontal scaling.
+
 Apache Kafka is a distributed **event log**: producers append messages (records) to topics, consumers read them. Unlike a classic message queue, a message isn't deleted once read: it stays on disk for the retention period, and each consumer keeps its own position. Several applications can read the same messages, at their own pace, and replay them.
 
 Typical uses: communication between microservices through events (`OrderCreated`, `PaymentAccepted`), data pipelines (CDC with Debezium, data lake), activity tracking, logs and metrics, stream processing (Kafka Streams).
@@ -7,6 +9,8 @@ Typical uses: communication between microservices through events (`OrderCreated`
 What it provides: high throughput (sequential writes, batching, zero-copy), horizontal scalability (partitions), durability (replication), decoupling of producers and consumers in time.
 
 ## Main components
+
+> **In short**: A cluster of brokers stores topics, split into partitions: ordered, append-only logs where each message has an offset. The message key decides the partition, so messages with the same key stay in order.
 
 ```text
 Cluster (brokers 1, 2, 3)
@@ -32,6 +36,8 @@ The key decides the partition: `hash(key) % number of partitions`. All messages 
 
 ## Consumer groups
 
+> **In short**: Within a consumer group, each partition is read by a single consumer, so the work is shared and parallelism is limited by the number of partitions; each group receives all the messages. Each group commits its offsets, and partitions are reassigned (rebalance) when consumers join or leave.
+
 Consumers with the same `group.id` form a group: each partition of the topic is assigned to **one single consumer** of the group. The partitions are shared, each message is processed once per group.
 
 ```text
@@ -52,6 +58,8 @@ Group "notification":  consumer C ← P0, P1, P2
 
 ## Producer: acks, idempotence, ordering
 
+> **In short**: Each partition is replicated (leader + followers). With `acks=all` and `min.insync.replicas=2`, a write is acknowledged once replicated, and the idempotent producer (default) removes duplicates caused by retries while keeping the order.
+
 ```text
 Producer → leader of partition 2 (broker 1) → replicated to followers (brokers 2, 3)
 ```
@@ -70,6 +78,8 @@ Each partition has a **leader** (receives writes and reads) and **followers** th
 
 ## Delivery guarantees
 
+> **In short**: Committing offsets after processing gives at-least-once delivery, so duplicates are possible. Exactly-once only covers Kafka-to-Kafka flows, so in practice: at-least-once with idempotent consumers.
+
 | Guarantee | How | Consequence |
 |---|---|---|
 | **At most once** | commit the offset before processing | a crash loses the message |
@@ -80,6 +90,8 @@ Exactly-once doesn't cover side effects outside Kafka (a database write, a call 
 
 ## Retention and log compaction
 
+> **In short**: Messages are kept for a time or size limit, whether consumed or not; log compaction instead keeps the last message of each key, turning the topic into a table of the latest state.
+
 Messages are kept on disk, whether they were consumed or not:
 
 - **Retention by time or size**: `retention.ms` (7 days by default), `retention.bytes`. Old segments are deleted.
@@ -89,6 +101,8 @@ A consumer can replay a topic by resetting its offsets (`kafka-consumer-groups.s
 
 ## Pitfalls and design choices
 
+> **In short**: Ordering only exists within a partition, adding partitions moves keys to other partitions, a frequent key overloads one partition, slow processing triggers rebalances, and a poison message needs a dead letter topic.
+
 - **Ordering only within a partition**: no global order on a topic. Messages that must stay ordered (all the events of one order) need the same key.
 - **Adding partitions** changes `hash(key) % partitions`: a key may move to another partition, the order between old and new messages of that key is lost. Choose the number of partitions upfront, with some margin.
 - **Hot partition**: a very frequent key (a big customer) overloads one partition and its consumer.
@@ -97,6 +111,8 @@ A consumer can replay a topic by resetting its offsets (`kafka-consumer-groups.s
 - **Message format**: JSON, or Avro / Protobuf with a schema registry, to evolve the format without breaking the consumers (adding optional fields).
 
 ## Kafka vs RabbitMQ
+
+> **In short**: Kafka is a replayable log read by several consumer groups, ordered per partition, built for streaming and very high throughput; RabbitMQ is a broker routing messages to queues and deleting them once acknowledged, better for task queues and complex routing.
 
 | | Kafka | RabbitMQ |
 |---|---|---|

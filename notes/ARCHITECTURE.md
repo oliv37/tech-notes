@@ -1,5 +1,7 @@
 ## SOLID principles
 
+> **In short**: Five design principles for code that is easy to change: one reason to change per class (S), extend without modifying (O), subtypes usable as their parent (L), small focused interfaces (I), depend on abstractions rather than implementations (D). Guidelines to apply where change is expected, not rules to apply blindly.
+
 Five object-oriented design principles (Robert C. Martin) aimed at code that is easier to change, test and extend.
 
 **S — Single Responsibility**: a class should have only one reason to change. An `InvoiceService` that computes totals, generates the PDF and sends the email changes for three different reasons; split it into `InvoiceCalculator`, `InvoicePdfGenerator`, `InvoiceMailer`.
@@ -35,6 +37,8 @@ class OrderService {
 These are guidelines, not strict rules: applied blindly, they lead to over-engineering (an interface for every class, dozens of tiny classes). Apply them where change is actually expected.
 
 ## Hexagonal architecture
+
+> **In short**: Ports and Adapters: the business core (domain + use cases) defines interfaces (ports), and the technical code (REST, JPA, Kafka) implements or calls them (adapters). Dependencies point inwards, so the core is testable alone and technologies can be swapped; worth it for a rich domain, overkill for simple CRUD.
 
 Also called **Ports and Adapters** (Alistair Cockburn). The goal: isolate the business logic from technical details (framework, database, messaging, UI), so it can be tested alone and the technology can change without touching it.
 

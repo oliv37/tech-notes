@@ -1,5 +1,7 @@
 ## Mockito: what it is and how it works
 
+> **In short**: Mockito creates mocks: fake implementations of a class's dependencies, to test it in isolation. A mock does nothing by default, returns what the test stubbed, and records its calls for verification; the inline mock maker (default since Mockito 5) can even mock final classes and static methods.
+
 Mockito creates **mocks**: fake implementations of a class's dependencies, to test that class in isolation. Testing an `OrderService` shouldn't need a real database or a real payment API: its `OrderRepository` and `PaymentClient` are replaced by mocks whose answers are defined by the test (**stubbing**), and whose calls can be checked afterwards (**verification**).
 
 How it works: at runtime, Mockito generates a class (with ByteBuddy) that intercepts every method call on the mock. By default, a method of a mock does nothing and returns an "empty" value: `null`, `0`, `false`, an empty collection or `Optional.empty()`. Stubbing records "for this method with these arguments, return this"; every call is also recorded, so the test can verify it. The component creating mocks is the **mock maker**:
@@ -10,6 +12,8 @@ How it works: at runtime, Mockito generates a class (with ByteBuddy) that interc
 Creating a mock doesn't call any constructor: Mockito allocates the instance directly (Objenesis), so the constructor code and field initializers never run, and fields stay `null` / `0`. Static initializers do run, since the class is loaded normally. Only a spy runs the constructor: `spy(new ArrayList<>())` wraps an object built by the test.
 
 ## Basic usage: stubbing and verification
+
+> **In short**: `when(...).thenReturn(...)` defines what a mock returns, `verify(mock).method(...)` checks it was called; with `MockitoExtension`, `@Mock` creates the mocks and `@InjectMocks` the tested class.
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +54,8 @@ class OrderServiceTest {
 - BDD style, same features: `given(repository.findById(42L)).willReturn(...)` and `then(paymentClient).should().pay(100.0)` (`BDDMockito`).
 
 ## Argument matchers and captors
+
+> **In short**: Matchers (`any()`, `eq()`, `argThat()`) replace exact values, but accept wrong arguments too: prefer exact values when they're known, and `any()` with `never()`. An `ArgumentCaptor` captures an argument built by the tested code, to check its fields.
 
 When the exact argument doesn't matter, or is built inside the tested code, matchers replace the values:
 
@@ -137,6 +143,8 @@ assertThat(userCaptor.getValue())
 
 ## Void methods, answers and spies
 
+> **In short**: Void methods are stubbed with the `do...` family (`doThrow(...).when(mock).send(...)`), `thenAnswer` computes the result from the arguments, and a spy wraps a real object, calling the real methods unless stubbed.
+
 `when(...)` can't wrap a `void` method (there's no return value to pass to it): the `do...` family is used instead, with the call written after.
 
 ```java
@@ -162,6 +170,8 @@ doReturn(100).when(list).size();    // stubbed
 ```
 
 ## Strictness, static mocks and Spring
+
+> **In short**: Strict stubs fail a test on unused stubbing, `mockStatic()` mocks a static method within a try-with-resources block, and `@MockitoBean` replaces a Spring bean with a mock in a Spring test.
 
 - **Strict stubs**: with `MockitoExtension`, a stubbing never used by the test fails it (`UnnecessaryStubbingException`), and a stubbed method called with different arguments is reported. This keeps tests free of leftover stubs. `lenient().when(...)` relaxes it for a single stubbing.
 - **Static methods** (inline mock maker): scoped to a try-with-resources block, then restored.

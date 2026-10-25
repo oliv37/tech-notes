@@ -12,7 +12,8 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 ## Writing a section
 
 - Short: the essentials needed to explain the topic in an interview, not every detail. A small detail gets a few lines or bullets.
-- Start with what it is / the key difference, then a minimal code example when it helps, then pitfalls or when to use it.
+- Start each section with a `> **In short**: ...` blockquote: the 2-3 sentence answer to give in an interview. The details follow below it.
+- Then what it is / the key difference, then a minimal code example when it helps, then pitfalls or when to use it.
 - Prefer concrete examples (`Author` / `Book`, `User`) and comparison tables for "X vs Y" topics.
 - Verify technical claims against how the technology actually behaves, including the version a feature appeared in and whether it's final or still in preview.
 

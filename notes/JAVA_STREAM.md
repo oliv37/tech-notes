@@ -1,5 +1,7 @@
 ## What a stream is
 
+> **In short**: A stream (Java 8) describes a computation on a sequence of elements as a pipeline: a source, intermediate operations (`filter`, `map`), and one terminal operation (`toList`, `collect`). Unlike a collection, it stores nothing, is lazy, single-use, and never modifies its source.
+
 The Stream API (Java 8, `java.util.stream`) processes a sequence of elements declaratively: you describe **what** to compute (filter, transform, aggregate), not the loop that does it.
 
 ```java
@@ -22,6 +24,8 @@ A stream is a **pipeline**: a source, zero or more intermediate operations, one 
 | Iteration | external (`for` loop written by the code) | internal (the stream drives the loop) |
 
 ## How it works: laziness and element-by-element processing
+
+> **In short**: Nothing runs until the terminal operation; then each element goes through the whole pipeline before the next one, and short-circuit operations (`findFirst`, `limit`) stop early. Stateless operations pass each element on immediately, stateful ones (`sorted`, `distinct`) keep state, and `sorted` waits for the whole stream.
 
 Intermediate operations only **build** the pipeline. The terminal operation starts it, and then each element goes through **all** the operations one after the other, before the next element (vertical processing, not one full pass per operation):
 
@@ -58,6 +62,8 @@ Stream.of("c", "a", "b")
 
 ## Creating a stream
 
+> **In short**: From a collection (`stream()`), an array, values (`Stream.of`), a range (`IntStream.range`), or an infinite generator (`Stream.iterate`, `generate`) to bound with `limit`.
+
 ```java
 list.stream()                          // from a collection
 Arrays.stream(array)                   // from an array
@@ -73,6 +79,8 @@ map.entrySet().stream()                // a Map isn't a Collection: go through e
 ```
 
 ## Intermediate operations
+
+> **In short**: Intermediate operations return a new stream and are lazy: stateless ones (`filter`, `map`, `flatMap`, `peek`) and stateful ones (`distinct`, `sorted`, `limit`, `skip`, `takeWhile`).
 
 Two kinds: **stateless** operations handle each element alone and pass it on immediately; **stateful** ones keep state about other elements (see above).
 
@@ -92,6 +100,8 @@ Two kinds: **stateless** operations handle each element alone and pass it on imm
 
 ## Terminal operations
 
+> **In short**: A terminal operation triggers the pipeline and produces the result: a list (`toList()`, unmodifiable), a `collect`, a count, an `Optional` (`findFirst`, `max`), a boolean (`anyMatch`), or a `reduce`.
+
 | Operation | Result |
 |---|---|
 | `toList()` (Java 16) | unmodifiable `List` |
@@ -108,6 +118,8 @@ Two kinds: **stateless** operations handle each element alone and pass it on imm
 - `Optional` results: `max(...).orElseThrow()`, `findFirst().map(Author::getName).orElse("unknown")`.
 
 ## Collectors
+
+> **In short**: `collect()` builds the result with a `Collector`: `toList`, `toSet`, `toMap` (watch for duplicate keys), `groupingBy` (with a downstream collector such as `counting()`), `partitioningBy`, `joining`, statistics.
 
 `collect()` with a `Collector` builds the result: collections, maps, groups, strings, statistics.
 
@@ -148,6 +160,8 @@ double average = books.stream().collect(Collectors.averagingInt(Book::getPages))
 
 ## Primitive streams
 
+> **In short**: `IntStream`, `LongStream`, `DoubleStream` avoid boxing and offer numeric operations (`sum`, `average`, `summaryStatistics`); `boxed()` / `mapToObj()` go back to an object stream.
+
 `IntStream`, `LongStream`, `DoubleStream` avoid boxing each value into an `Integer`, and provide numeric operations:
 
 ```java
@@ -161,6 +175,8 @@ IntStream.range(0, list.size()).mapToObj(i -> i + ": " + list.get(i)); // with a
 - `boxed()` / `mapToObj()` go back to a `Stream<Integer>` / `Stream<T>`.
 
 ## Parallel streams
+
+> **In short**: `parallelStream()` splits the work over the common `ForkJoinPool`. Rarely worth it: only for CPU-heavy work on large, easily split data, never for blocking I/O (the pool is shared by the whole JVM), and always measured first.
 
 `parallelStream()` or `.parallel()` splits the source (`Spliterator`) and processes the parts on several threads of the common **`ForkJoinPool`**, then combines the results.
 
@@ -178,6 +194,8 @@ Rarely worth it in an application:
 
 ## Pitfalls and good practices
 
+> **In short**: No side effects in lambdas, a stream can't be reused, checked exceptions don't fit in lambdas, I/O streams must be closed, and a plain loop stays better when it's clearer.
+
 - **Side effects**: lambdas should not modify external state. `forEach(list::add)` instead of `collect(toList())` is wrong (and unsafe in parallel).
 - **Reuse**: a stream stored in a variable can only be consumed once; store the collection, or a `Supplier<Stream<T>>`.
 - **Checked exceptions**: a `Function` can't throw an `IOException`; wrap it into an unchecked exception (`UncheckedIOException`), or use a loop.
@@ -186,6 +204,8 @@ Rarely worth it in an application:
 - **Performance**: a stream is slightly slower than a loop on simple cases, negligible in business code. What matters more: avoid `sorted` or `distinct` when not needed, filter early, and use primitive streams for numbers.
 
 ## Evolutions since Java 8
+
+> **In short**: Java 9 added `takeWhile`, `dropWhile` and `ofNullable`, Java 16 `toList()` and `mapMulti`, and Java 24 the stream gatherers for custom intermediate operations.
 
 | Version | Addition |
 |---|---|
@@ -196,6 +216,8 @@ Rarely worth it in an application:
 | Java 24 | **Stream gatherers** (`gather`, JEP 485): custom intermediate operations (see below) |
 
 ## Stream gatherers (Java 24)
+
+> **In short**: A gatherer (`stream.gather(...)`) is a custom intermediate operation, as a collector is a custom terminal one: an optional state, an integrator called per element (which can push 0..n elements and stop the stream), a finisher, and a combiner for parallel streams. Built-ins: `windowFixed`, `windowSliding`, `scan`, `fold`, `mapConcurrent`.
 
 A **gatherer** (JEP 485, final in Java 24) is a custom intermediate operation, passed to `stream.gather(...)`. It does for intermediate operations what a `Collector` does for terminal ones: before, an operation missing from the API (batches, sliding windows, distinct by key) meant leaving the stream, or a hack with `collect`.
 

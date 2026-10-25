@@ -1,5 +1,7 @@
 ## XSS and CSRF
 
+> **In short**: XSS: the attacker's JavaScript runs in the page, with all its rights (Angular escapes and sanitizes by default; CSP adds a second line of defense). CSRF: another site makes the browser send an authenticated request with the cookies (blocked by `SameSite` and CSRF tokens; not an issue with an `Authorization` header). An XSS bypasses any CSRF protection.
+
 **XSS** (Cross-Site Scripting): an attacker manages to run their own JavaScript in the application's page, usually by injecting content (a comment, a username, a URL parameter) that ends up rendered as HTML. The script runs with the same rights as the application: it can read `localStorage`, call the APIs as the user, modify the page.
 
 - Angular escapes interpolation (`{{ }}`) and sanitizes `[innerHTML]` by default.

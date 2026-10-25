@@ -1,5 +1,7 @@
 ## JDBC basics: SELECT, INSERT, UPDATE, DELETE
 
+> **In short**: Always use a `PreparedStatement` with `?` parameters (no SQL injection), and close the resources with try-with-resources. `executeQuery()` returns a `ResultSet` read row by row, `executeUpdate()` the number of rows modified.
+
 Always use a `PreparedStatement` with `?` parameters, never string concatenation: the values are sent separately from the SQL, which prevents SQL injection. Resources (`Connection`, `PreparedStatement`, `ResultSet`) are closed with try-with-resources; with a pool, closing the connection returns it to the pool.
 
 **SELECT**: `executeQuery()` returns a `ResultSet`, a cursor read row by row with `next()`.
@@ -59,6 +61,8 @@ try (PreparedStatement statement = connection.prepareStatement("DELETE FROM book
 Exceptions: `addBatch()` only queues the statement until `executeBatch()` (see batching below). And `executeQuery()` sends the query right away, but pgJDBC loads the **whole result into memory** before returning by default; to stream a large result by chunks, disable auto-commit and set `statement.setFetchSize(500)`: the driver then uses a server-side cursor.
 
 ## JDBC auto-commit, transactions and read-only
+
+> **In short**: A JDBC connection is in auto-commit by default: each statement is its own transaction. `setAutoCommit(false)` groups statements until `commit()` / `rollback()`; with PostgreSQL, the driver sends `BEGIN` lazily (`BEGIN READ ONLY` with `setReadOnly(true)`). `@Transactional` does this and restores the connection state afterwards.
 
 By default, a JDBC `Connection` is in **auto-commit** mode: each statement is its own transaction, committed as soon as it's executed. To group several statements in a single transaction (all or nothing), auto-commit is disabled on the connection, and the transaction ends with `commit()` or `rollback()`:
 
@@ -133,6 +137,8 @@ The restore happens in `finally`, after the commit or the rollback (restoring be
 - **Routing reads to a replica**: an `AbstractRoutingDataSource` can choose the database with `TransactionSynchronizationManager.isCurrentTransactionReadOnly()`, wrapped in a `LazyConnectionDataSourceProxy`, since Spring gets the connection before setting that flag.
 
 ## JDBC batching
+
+> **In short**: `addBatch()` accumulates the parameters of a `PreparedStatement`, and `executeBatch()` sends them in one round trip, ideally in a single transaction; for large volumes, send a batch every few hundred rows.
 
 Instead of one round trip per statement, a batch accumulates the parameters of a `PreparedStatement` with `addBatch()`, and sends them all with `executeBatch()`, in one round trip.
 

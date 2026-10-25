@@ -1,5 +1,7 @@
 ## Angular lazy loading
 
+> **In short**: Lazy loading splits the app into chunks downloaded only when needed: `loadComponent` / `loadChildren` with a dynamic `import()` for routes, `@defer` blocks inside a template. Faster first load; preloading and `canMatch` refine it.
+
 Lazy loading splits the app into separate JS chunks, downloaded only when needed instead of in the initial bundle. Faster first load, especially for large apps with many features.
 
 **Lazy routes**: `loadComponent` (one component) or `loadChildren` (a set of routes) take a dynamic `import()`, which the build turns into a separate chunk, downloaded on the first navigation to the route.
@@ -39,6 +41,8 @@ export const routes: Routes = [
 
 ## Angular Interceptor
 
+> **In short**: A functional interceptor (`HttpInterceptorFn`) sees every `HttpClient` request and response: the place for cross-cutting concerns like adding the auth token or handling errors globally. Requests are immutable (`req.clone()`), and interceptors run in array order for requests, reverse order for responses.
+
 An interceptor is a function that sits between `HttpClient` and the backend. Every HTTP request goes through it, so it is the place for cross-cutting concerns: adding an auth token, handling errors globally, logging, showing a loader.
 
 ```typescript
@@ -76,6 +80,8 @@ export const appConfig: ApplicationConfig = {
 The order matters: requests go through interceptors in the array order (`auth` → `error` → backend), and responses come back in reverse order (backend → `error` → `auth`). Here `errorInterceptor` sees the request with the token already added, and handles errors before `authInterceptor` gets the response.
 
 ## Angular error handling and ErrorHandler
+
+> **In short**: Errors are handled locally (`catchError`), globally for HTTP (an error interceptor), and as a last resort by `ErrorHandler`, which receives every uncaught error. In templates, `@defer` has an `@error` block, resources expose `error()` as a signal, and `@boundary` / `@error` catches rendering errors.
 
 Errors are handled at three levels, from the most specific to the most global:
 
@@ -152,6 +158,8 @@ user = httpResource<User>(() => `/api/users/${this.userId()}`);
 
 ## Storing the auth token in Angular
 
+> **In short**: `localStorage` is readable by any XSS; memory is lost on refresh; an `HttpOnly` cookie can't be read by JavaScript but needs CSRF protection (`SameSite`, CSRF token). The most secure option is a BFF: tokens stay on the server, the browser only holds an `HttpOnly` session cookie.
+
 Where the token lives defines what an attacker can do with it:
 
 - **`localStorage` / `sessionStorage`**: simple, but readable by any JavaScript running on the page. A single XSS flaw (or a compromised npm dependency) can steal the token and use it from anywhere.
@@ -175,6 +183,8 @@ How it works in practice:
 A stateless BFF (encrypted tokens directly in the cookie) also scales without Redis, but comes with trade-offs: cookie size (often > 4 KB), concurrent refreshes that can revoke the session when refresh token rotation is enabled, and no server-side revocation. The stateful BFF with a shared session store remains the recommended approach.
 
 ## Forcing the caller to handle errors
+
+> **In short**: Observable errors are untyped and optional to handle. Returning a `Result` type (a discriminated union `{ ok: true; value } | { ok: false; error }`) makes the error part of the contract: TypeScript forces the caller to check `ok` before using the value, and an exhaustive `switch` forces handling every error case.
 
 With an `Observable`, errors are untyped and optional to handle: nothing forces the caller to pass an `error` callback or a `catchError`, and TypeScript can't say which errors can occur. To make error handling mandatory, the service can catch the errors itself and return a **result type**, a discriminated union that the caller must check before accessing the value:
 

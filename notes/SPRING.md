@@ -1,5 +1,7 @@
 ## IoC and dependency injection
 
+> **In short**: IoC: the framework, not the application code, controls object creation, lifecycle and calls. DI is its application to dependencies: a class declares what it needs, preferably through its constructor, and Spring's container (the `ApplicationContext`) provides it.
+
 **IoC (Inversion of Control)** is the general principle: the application code no longer controls object creation and the program flow, a framework does, and calls the code ("don't call us, we'll call you"). Spring's **IoC container** (the `ApplicationContext`) creates the objects (**beans**), wires them together, manages their lifecycle (`@PostConstruct`, scopes, destruction) and wraps them in proxies (`@Transactional`, `@Async`). Other forms of IoC: a controller called by the `DispatcherServlet`, a `@Scheduled` method, JUnit callbacks.
 
 **DI (Dependency Injection)** is how IoC applies to dependencies: an object doesn't create what it needs, it receives it.
@@ -44,6 +46,8 @@ How Spring finds the beans:
 In short: IoC is the principle (the framework controls object creation and lifecycle), DI is its implementation (dependencies provided from outside, preferably through the constructor), and Spring's IoC container is the `ApplicationContext`.
 
 ## Declaring a bean
+
+> **In short**: Stereotype annotations (`@Component`, `@Service`, `@Repository`...) with component scan for the application's own classes, `@Bean` methods in a `@Configuration` for third-party classes or creation logic, and `@Import` / `BeanRegistrar` for advanced cases.
 
 **1. Stereotype annotation + component scan**: the usual way for the application's own classes. Spring scans the packages (from the `@SpringBootApplication` class, or `@ComponentScan("com.example")`) and registers each annotated class.
 
@@ -135,6 +139,8 @@ In practice: stereotypes for the application's classes, `@Bean` for third-party 
 
 ## Several beans of the same type
 
+> **In short**: With several candidates, Spring uses the `@Qualifier` of the injection point, then the `@Primary` bean, then a bean whose name matches the parameter name, otherwise startup fails. `@Qualifier` is the explicit, recommended choice; `@Fallback` marks a default bean to use only when no other one exists.
+
 ```java
 @Configuration
 public class PaymentConfig {
@@ -195,6 +201,8 @@ Resolution order: `@Qualifier` → `@Primary` → non-`@Fallback` beans → para
 
 ## Spring bean scopes
 
+> **In short**: A bean is a singleton by default (one shared instance, so it must be stateless); `prototype` gives a new instance on each injection, `request` / `session` one per HTTP request / session. A shorter-lived bean injected into a singleton needs a proxy (`@RequestScope`) or an `ObjectProvider` (prototype).
+
 The scope defines how many instances of a bean the container creates, and how long they live. Set with `@Scope` (or shortcuts like `@RequestScope`) on the class or the `@Bean` method.
 
 | Scope         | Instances                                      | Typical use                                 |
@@ -250,6 +258,8 @@ A prototype bean is only worth it when the object needs Spring: injected depende
 
 ## @Conditional and @Profile
 
+> **In short**: `@Conditional` registers a bean only if a condition evaluated at startup is true; `@Profile` (Spring Framework) is one, based on the active profiles. Spring Boot builds its `@ConditionalOn...` annotations on it.
+
 **`@Conditional`** registers a `@Configuration` class, a `@Component` or a `@Bean` method only if a condition is true. The condition is evaluated **at startup**, when Spring reads the bean definitions, not at each injection.
 
 ```java
@@ -289,6 +299,8 @@ MailSender fakeMailSender() { return new LoggingMailSender(); }
 - Profile-specific files (`application-prod.yml`) and profile groups come from Spring Boot (see [Spring Boot](SPRING_BOOT.md)).
 
 ## ImportSelector
+
+> **In short**: An `ImportSelector`, passed to `@Import`, chooses by code which configuration classes to import: it's how `@Enable...` annotations pick their configuration. Its deferred variant, run after the application's configurations, is the base of Spring Boot's auto-configuration.
 
 An `ImportSelector` is passed to `@Import` like a class, but isn't registered itself: Spring calls it to get, **by code**, the names of the classes to import. It's how an `@Enable...` annotation chooses its configuration from its attributes.
 

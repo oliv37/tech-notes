@@ -1,5 +1,7 @@
 ## Spring Data JPA auditing
 
+> **In short**: `@EnableJpaAuditing` and an entity listener fill `@CreatedDate`, `@LastModifiedDate`, `@CreatedBy` and `@LastModifiedBy` automatically, the user coming from an `AuditorAware` bean (e.g. from Spring Security). Unlike Hibernate's `@CreationTimestamp`, it also tracks who made the change.
+
 Spring Data fills audit fields automatically: when (`@CreatedDate`, `@LastModifiedDate`) and **who** (`@CreatedBy`, `@LastModifiedBy`).
 
 ```java

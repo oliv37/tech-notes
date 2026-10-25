@@ -1,5 +1,7 @@
 ## @Controller vs @RestController
 
+> **In short**: `@RestController` is `@Controller` + `@ResponseBody`: the return value is serialized to the response body (JSON), whereas a `@Controller` returns a view name rendered as an HTML template.
+
 `@RestController` = `@Controller` + `@ResponseBody` on every method. The difference is what happens to the return value:
 
 - **`@Controller`**: the returned `String` is a **view name**, resolved by a `ViewResolver` into a template (Thymeleaf, JSP) rendered as HTML.
@@ -44,6 +46,8 @@ public class OrderApiController {
 - `ResponseEntity<...>` is written to the body in both cases, even without `@ResponseBody`.
 
 ## Spring MVC REST controller
+
+> **In short**: A `@RestController` maps HTTP requests to methods with `@GetMapping`, `@PostMapping`...; it binds the request with `@PathVariable`, `@RequestParam` and `@RequestBody`, and controls the status with `ResponseEntity` or `@ResponseStatus`. It returns DTOs, not JPA entities.
 
 A REST controller is a bean whose methods handle HTTP requests: the `DispatcherServlet` finds the method matching the URL and the HTTP method, converts the request into its parameters, and serializes the return value to JSON (Jackson, through an `HttpMessageConverter`).
 
@@ -112,6 +116,8 @@ Annotations:
 
 ## Content type: consumes and produces
 
+> **In short**: `consumes` restricts the request `Content-Type` (`415` otherwise), `produces` the response type negotiated with the `Accept` header (`406` otherwise). File uploads use `multipart/form-data` with `MultipartFile` and `@RequestPart`.
+
 `consumes` and `produces`, on a mapping annotation of the class or the method, restrict the content types of a request and its response.
 
 ```java
@@ -177,6 +183,8 @@ curl -F "file=@invoice.pdf;type=application/pdf" \
 
 ## Request validation
 
+> **In short**: `@Valid` on a `@RequestBody` triggers Bean Validation (`@NotBlank`, `@Positive`...), and an invalid body gives a `400`; constraints on simple parameters are checked too since Spring 6.1.
+
 Bean Validation (`spring-boot-starter-validation`) checks the request body declared with `@Valid`:
 
 ```java
@@ -193,6 +201,8 @@ public record OrderLineRequest(@NotNull Long productId, @Positive int quantity) 
 - `@Validated` (Spring) also accepts validation groups.
 
 ## Error handling
+
+> **In short**: Without a handler, Spring MVC sets the status of its own exceptions (`DefaultHandlerExceptionResolver`), and Spring Boot's `/error` page writes the body, also for unhandled exceptions (`500`). A `@RestControllerAdvice` with `@ExceptionHandler` methods handles the application's errors, typically as `ProblemDetail` (RFC 9457); extending `ResponseEntityExceptionHandler` formats Spring's exceptions the same way.
 
 When a controller throws an exception, the `DispatcherServlet` asks its `HandlerExceptionResolver`s, in order, to turn it into a response:
 
@@ -336,6 +346,8 @@ Summary:
 In short: without any code, Spring returns the right status with the `/error` JSON. A `@RestControllerAdvice` handles the application's exceptions. Extending `ResponseEntityExceptionHandler` (or `spring.mvc.problemdetails.enabled=true`) gives Spring's exceptions a `ProblemDetail` body too.
 
 ## Spring MVC HandlerInterceptor
+
+> **In short**: A `HandlerInterceptor` runs around the controller method inside Spring MVC (`preHandle`, `postHandle`, `afterCompletion`); unlike a servlet filter, it knows the target `HandlerMethod` and its annotations. It's registered with a `WebMvcConfigurer`, with URL patterns.
 
 An interceptor runs inside Spring MVC, around the controller method called by the `DispatcherServlet`. Unlike a servlet filter (see [Servlet](SERVLET.md)), it knows which controller method handles the request.
 

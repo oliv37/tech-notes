@@ -1,5 +1,7 @@
 ## Collection types
 
+> **In short**: Four main types: `List` (ordered, duplicates allowed), `Set` (unique elements), `Queue` / `Deque` (processing order), `Map` (key → value). A `Map` is part of the Collections Framework but doesn't extend `Collection`; `ArrayList`, `HashSet` and `HashMap` are the usual implementations.
+
 Four main types: `List`, `Set`, `Queue` / `Deque` and `Map`. But a `Map` is **not** a `Collection`: the `Map` interface doesn't extend `Collection`, it's only part of the Collections Framework (`java.util`).
 
 ```
@@ -34,6 +36,8 @@ Why `Map` isn't a `Collection`: a `Collection` holds single elements (`add(E)`, 
 - For concurrency (`java.util.concurrent`, since Java 5): `ConcurrentHashMap`, `CopyOnWriteArrayList`, `BlockingQueue` (producer / consumer).
 
 ## equals and hashCode
+
+> **In short**: Override them together, on the same fields, whenever objects have a logical equality (value objects, map keys, set elements). Contract: equal objects must have the same hash code, since `HashMap` and `HashSet` find the bucket with `hashCode()` before comparing with `equals()`.
 
 By default (`Object`), `equals()` compares references (`==`) and `hashCode()` is derived from the object identity. Overriding them defines a logical equality (two objects with the same values are equal).
 
@@ -102,6 +106,8 @@ Hence the same rules for set elements as for map keys (`hashCode()` / `equals()`
 
 ## Interfaces: default, static and private methods
 
+> **In short**: Since Java 8, an interface can have `default` methods (behavior inherited by implementations, used to evolve an interface without breaking them) and `static` methods; since Java 9, `private` methods shared by the others. Still no instance state.
+
 Since Java 8 and 9, an interface can contain more than abstract methods:
 
 ```java
@@ -132,6 +138,8 @@ Interface vs abstract class: an interface still can't hold state (only constants
 
 ## Multiple inheritance
 
+> **In short**: Java forbids extending several classes (diamond problem), but a class can implement several interfaces, which carry behavior (`default` methods) but no state; a conflict between two `default` methods must be resolved by overriding. Composition is the other alternative.
+
 Java forbids extending several classes, to avoid the diamond problem: if `B` and `C` both extend `A` and override the same method, a class `D` extending both wouldn't know which version to use, nor how to share `A`'s fields.
 
 Two alternatives:
@@ -161,6 +169,8 @@ In practice: interfaces define what an object can do, composition brings code re
 
 ## Exception types
 
+> **In short**: `Throwable` splits into `Error` (JVM problems, not to catch) and `Exception`; checked exceptions must be declared or caught, while `RuntimeException` subclasses (programming errors) and `Error` are unchecked. The modern trend, Spring included, favors unchecked exceptions.
+
 ```
 Throwable
 ├── Error                   # JVM problems: OutOfMemoryError, StackOverflowError
@@ -186,10 +196,14 @@ Good practices:
 
 ## ClassNotFoundException vs NoClassDefFoundError
 
+> **In short**: `ClassNotFoundException` (checked): a class loaded by name isn't on the classpath. `NoClassDefFoundError` (`Error`): a class present at compile time can't be used at runtime, because it's missing or its static initialization failed.
+
 - **`ClassNotFoundException`** (checked): a class loaded by name (`Class.forName("...")`, `loadClass()`) isn't on the classpath. Can be caught, e.g. to fall back when an optional library is missing.
 - **`NoClassDefFoundError`** (`Error`): a class referenced directly in the code, present at compile time, can't be used at runtime. Either missing at runtime (dependency not deployed, version conflict), or its static initialization failed earlier: first an `ExceptionInInitializerError`, then `Could not initialize class X` on every later access.
 
 ## map vs flatMap
+
+> **In short**: `map` transforms each element into one value; `flatMap` transforms each element into a stream (or an `Optional`) and flattens the results into one, avoiding a `Stream<Stream<R>>`.
 
 Both transform the elements of a `Stream` (or the value of an `Optional`), the difference is what the function returns:
 
@@ -218,6 +232,8 @@ user.flatMap(User::getAddress); // Optional<Address>
 Rule of thumb: if the function already returns a container (`Stream`, `Optional`), use `flatMap` to avoid nesting it.
 
 ## Switch expressions, records and sealed classes
+
+> **In short**: Records carry immutable data, sealed classes close a hierarchy to a known list of subtypes, and switch expressions return a value: together, an exhaustive `switch` over a sealed type is checked by the compiler, with no `default` needed.
 
 Three features (Java 14 to 21) designed to work together for data-oriented code: records carry the data, sealed types close the hierarchy, switch handles every case.
 
@@ -287,6 +303,8 @@ String message = switch (result) {
 
 ## Pattern matching
 
+> **In short**: A pattern tests the type or shape of a value and extracts its parts in one step, in `instanceof` (Java 16) and `case` labels (Java 21), including record patterns that destructure records and guards with `when`. It replaces the `instanceof` + cast combination.
+
 A pattern tests the shape of a value (its type, its components) and extracts parts of it in a single step, replacing the `instanceof` + cast combo. Usable in two places only: `instanceof` (in an `if` or any boolean expression) and `case` labels of a `switch`. Not in assignments or loops (no destructuring like `var (x, y) = point`).
 
 **Type pattern with `instanceof`** (Java 16): tests the type and declares a variable already cast.
@@ -347,6 +365,8 @@ Typical use: replacing chains of `instanceof` + cast, or the visitor pattern, to
 
 ## InterruptedException
 
+> **In short**: Interruption is a cooperative cancellation request: `interrupt()` sets a flag, and blocking methods throw `InterruptedException`, clearing that flag. Never swallow it: propagate it, or restore the flag with `Thread.currentThread().interrupt()` and stop the work.
+
 Java has no way to forcibly stop a thread: interruption is a **cooperative** cancellation request. Calling `thread.interrupt()` sets an interrupt flag on the target thread; blocking methods (`Thread.sleep()`, `Object.wait()`, `Thread.join()`, `BlockingQueue.take()`, `Future.get()`) react by throwing `InterruptedException`, and **clear the flag** at the same time. This is how `ExecutorService.shutdownNow()` or `Future.cancel(true)` stop running tasks.
 
 It's a checked exception, and the classic mistake is to swallow it:
@@ -379,6 +399,8 @@ Watch out for `catch (Exception e)`: it also catches `InterruptedException`, and
 
 ## Thread states
 
+> **In short**: A thread is `NEW`, `RUNNABLE` (running or ready, also when blocked on I/O), `BLOCKED` (waiting for a monitor lock), `WAITING` / `TIMED_WAITING` (`wait()`, `join()`, `sleep()`), or `TERMINATED`. Visible in thread dumps.
+
 A thread is always in one of the 6 states of the `Thread.State` enum (visible with `thread.getState()` or in a thread dump):
 
 ```
@@ -402,6 +424,8 @@ Pitfalls:
 - In a thread dump, many threads `BLOCKED` on the same lock point to contention; two threads each `BLOCKED` on the lock held by the other is a deadlock (detected and reported by `jstack`).
 
 ## JVM diagnostic tools
+
+> **In short**: JDK command-line tools inspect a running JVM by its PID: `jps` to find it, `jstack` / `jcmd Thread.print` for thread dumps (deadlocks, blocked threads), `jcmd GC.heap_dump` for heap dumps, and Java Flight Recorder for low-overhead profiling.
 
 Command-line tools shipped with the JDK (not the JRE), to inspect a running JVM by its PID:
 
@@ -427,6 +451,8 @@ Useful in practice:
 - The tools must run as the same user as the JVM. In a container, run them inside it (`docker exec <container> jcmd 1 Thread.print`), which requires a JDK-based image.
 
 ## Virtual threads
+
+> **In short**: Since Java 21, virtual threads are lightweight threads managed by the JVM, run on a few carrier threads: when one blocks on I/O, it's unmounted and the carrier runs another one. Millions can run at once, so blocking code scales without reactive programming; useful for I/O-bound work, not CPU-bound.
 
 Since Java 21. A classic (platform) thread is mapped 1:1 to an OS thread: expensive (~1 MB of stack, slow to create), so applications are limited to a few hundred or thousand of them, managed in pools. A **virtual thread** is managed by the JVM: it costs a few KB and millions can run at the same time.
 
@@ -466,6 +492,8 @@ Pitfalls:
 
 ## ScopedValue
 
+> **In short**: `ScopedValue` (final in Java 25) shares contextual data (current user, request id) with the methods called within a scope, without passing it as a parameter. Immutable and bound to a scope, it replaces `ThreadLocal` for this use, especially with virtual threads.
+
 Final since Java 25. Shares contextual data (current user, request id) with every method called in a scope, without passing it as a parameter. Same purpose as `ThreadLocal`, designed for virtual threads.
 
 ```java
@@ -492,6 +520,8 @@ Differences with `ThreadLocal`:
 `ThreadLocal` remains useful for a mutable per-thread cache (e.g. a non-thread-safe `SimpleDateFormat`), or when the value is set and read in unrelated places without a clear scope.
 
 ## Singleton
+
+> **In short**: A single instance with a global access point: a private constructor and a static accessor. The holder class idiom gives lazy, thread-safe initialization without locks, and an `enum` is the safest version (protected against reflection and serialization). In Spring, beans are singletons by default.
 
 A singleton guarantees a single instance of a class, with a global access point. Common base: a `private` constructor and a static accessor. Several implementations, mainly differing in thread safety and lazy initialization:
 
@@ -551,6 +581,8 @@ public enum Config {
 In practice: a singleton is global state, hard to replace in tests. In a Spring application, beans are already singletons by default (one instance per container) and injected, which gives the same guarantee while keeping the code testable.
 
 ## Main evolutions since Java 8
+
+> **In short**: Java 8 brought lambdas, streams and `Optional`; then `var` (10), switch expressions (14), records (16), sealed classes (17), pattern matching for `switch` and virtual threads (21), gatherers (24) and `ScopedValue` (25). An LTS every 2 years: 8, 11, 17, 21, 25.
 
 Since Java 10, a new version every 6 months, and an LTS (long-term support) every 2 years since Java 17. Projects usually move from LTS to LTS: 8 → 11 → 17 → 21 → 25.
 

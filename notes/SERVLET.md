@@ -1,5 +1,7 @@
 ## Servlet and servlet container
 
+> **In short**: A servlet is a Java class handling HTTP requests; the servlet container (Tomcat, Jetty) listens on the port, turns the HTTP request into Java objects, calls the servlet mapped to the URL and manages its lifecycle. In Spring MVC, a single servlet, the `DispatcherServlet`, receives every request.
+
 A servlet is a Java class that handles HTTP requests and produces responses. It doesn't run on its own: a **servlet container** (Tomcat, Jetty, Undertow) listens on the port, parses the HTTP request into Java objects, picks the servlet mapped to the URL, and writes the response back. The API is defined by the Jakarta Servlet spec (`jakarta.servlet.*` since Jakarta EE 9 / Spring Boot 3, `javax.servlet.*` before).
 
 ```java
@@ -25,6 +27,8 @@ In Spring MVC, there's only one servlet: the **`DispatcherServlet`**, mapped to 
 
 ## HttpServletRequest and HttpServletResponse
 
+> **In short**: Created by the container for each request: `HttpServletRequest` gives everything the client sent (method, URI, parameters, headers, body readable once), `HttpServletResponse` builds the answer (status, headers, body).
+
 Created by the container for each request, they only live for the duration of that request.
 
 **`HttpServletRequest`**: everything the client sent.
@@ -46,6 +50,8 @@ Once the response is **committed** (buffer flushed, headers sent), the status an
 
 ## Scopes: request, session, ServletContext
 
+> **In short**: Attributes can be stored for one request (`HttpServletRequest`), one user session (`HttpSession`), or the whole application (`ServletContext`).
+
 Three places to store attributes, from the shortest to the longest lifetime:
 
 | Scope       | Object               | Lifetime                                      | Shared between      |
@@ -66,6 +72,8 @@ Three places to store attributes, from the shortest to the longest lifetime:
 `ServletConfig` (not to be confused with `ServletContext`) is per servlet: its name and its own init parameters.
 
 ## Listeners
+
+> **In short**: A listener is notified of container lifecycle events: application start and stop (`ServletContextListener`), sessions created or destroyed, requests started or finished.
 
 A listener is notified of lifecycle events of the container, without handling any request itself. Registered with `@WebListener`, in `web.xml`, or as a bean in Spring Boot.
 
@@ -94,6 +102,8 @@ public class StartupListener implements ServletContextListener {
 This is how Spring started before Spring Boot: `ContextLoaderListener`, a `ServletContextListener`, created the Spring context at application startup.
 
 ## Filters and FilterChain
+
+> **In short**: A filter intercepts requests before the servlet and responses on their way back, for cross-cutting concerns (security, logging, CORS); each filter calls `chain.doFilter()` to pass the request on. `OncePerRequestFilter` runs only once per request, and `DelegatingFilterProxy` lets a Spring bean act as a filter.
 
 A filter intercepts requests **before** they reach the servlet, and responses on their way back. For cross-cutting concerns: authentication, logging, CORS, compression, encoding, adding a correlation id.
 

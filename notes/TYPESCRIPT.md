@@ -1,5 +1,7 @@
 ## `as const`
 
+> **In short**: `as const` infers the narrowest literal types and makes the whole structure `readonly`: `["red", "green"] as const` is `readonly ["red", "green"]` instead of `string[]`.
+
 By default, TypeScript widens literal expressions to their general type: an array literal becomes a mutable array of a union type, a string literal becomes `string`. `as const` tells it to do the opposite — infer the narrowest possible literal types, and make the whole structure `readonly`.
 
 ```ts
@@ -11,6 +13,8 @@ const colorsConst = ["red", "green", "blue"] as const;
 ```
 
 ## Type narrowing
+
+> **In short**: Inside a branch guarded by a runtime check TypeScript recognizes (`typeof`, `instanceof`, `in`, equality, a custom `x is Type` guard), a broad type is narrowed to a more specific one. The narrowing only lasts within that branch.
 
 Given a broader type (e.g. a union), TypeScript narrows it to a more specific one inside a branch, based on a runtime check it recognizes — `typeof`, `instanceof`, `in`, equality, truthiness, or a custom type guard (`x is Type`).
 
@@ -31,6 +35,8 @@ function isString(value: unknown): value is string {
 The narrowing only lasts within the branch where the check holds — outside of it (or if the variable is reassigned), TypeScript falls back to the original, wider type.
 
 ## `satisfies` vs explicit type annotation
+
+> **In short**: Both check a value against a type, but an annotation (`const x: Foo`) widens the value to `Foo`, while `satisfies Foo` validates it and keeps its precise inferred (literal) type.
 
 Both check a value against a type, but they affect the value's inferred type differently:
 

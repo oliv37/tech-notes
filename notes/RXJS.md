@@ -1,5 +1,7 @@
 ## Hot vs cold observables
 
+> **In short**: A cold observable creates its producer on each `subscribe()` (an HTTP call runs once per subscriber); a hot one shares an existing producer (events, `Subject`), and late subscribers miss past values. `share()` / `shareReplay()` turn a cold observable into a shared one.
+
 The difference is where the producer (the source of values) lives:
 
 - **Cold**: the producer is created on each `subscribe()`. Every subscriber gets its own independent execution, from the start. Examples: `HttpClient` calls, `of()`, `from()`, `interval()`.
@@ -24,6 +26,8 @@ const users$ = this.http
 ```
 
 ## Observable lifecycle
+
+> **In short**: An observable emits any number of values, then at most one `error` or `complete`, after which nothing is delivered. The end applies to one execution: resubscribing to a cold observable restarts it (`retry`, `repeat`). The teardown logic, and `finalize()` on the consumer side, run once whatever ends it.
 
 An observable follows the contract `next* (error | complete)?`: any number of values, then at most one terminal notification. `error` and `complete` are final and mutually exclusive: once one is emitted, nothing else is delivered (RxJS ignores later calls).
 
@@ -51,6 +55,8 @@ this.http
 ```
 
 ## catchError placement
+
+> **In short**: An error terminates the stream it reaches, and `catchError` replaces that stream rather than repairing it. On a long-lived stream (form changes, clicks), put `catchError` on the inner observable of `switchMap`, otherwise the first error silently kills the whole stream.
 
 An error terminates the observable it reaches. `catchError` doesn't "repair" the stream: it replaces it with another observable. Its placement therefore decides which stream dies.
 
