@@ -17,7 +17,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 - No implementation to write: the proxy is generated from the interface, and a missing or invalid derived query fails at startup.
 - **`save()`**: `persist()` if the entity is new (null id, or null `@Version`), otherwise `merge()`, which first runs a `SELECT` to load the current state. With an id assigned by the application (UUID), the entity looks existing: implement `Persistable.isNew()`, or use a `@Version` field.
-- **Transactions**: `SimpleJpaRepository` is `@Transactional(readOnly = true)` at class level, its write methods `@Transactional`. Several repository calls in a service need a `@Transactional` service method to share one transaction.
+- **Transactions**: each repository method runs in its own transaction (`SimpleJpaRepository` is `@Transactional(readOnly = true)`, its write methods `@Transactional`). A `@Transactional` service method is required to make several writes atomic; for reads it's optional, but needed for lazy loading after the repository call (unless Open Session In View, enabled by default in Spring Boot but discouraged) and for `Stream` results.
 - `findById()` runs a `SELECT` and returns an `Optional`; `getReferenceById()` returns a lazy proxy without a query, enough to set an association (`order.setCustomer(customerRepository.getReferenceById(7L))`).
 - Custom code: an interface `OrderRepositoryCustom` + a class `OrderRepositoryCustomImpl` (with an `EntityManager`), and `OrderRepository extends JpaRepository<...>, OrderRepositoryCustom`.
 
