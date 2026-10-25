@@ -33,7 +33,7 @@ How it works: `AuditingEntityListener` is a JPA entity listener, called on `@Pre
 
 To control the time in tests, declare a `DateTimeProvider` (e.g. based on a fixed `Clock`) and reference it: `@EnableJpaAuditing(dateTimeProviderRef = "auditingDateTimeProvider")`.
 
-Compared to Hibernate's `@CreationTimestamp` / `@UpdateTimestamp` (see [Hibernate](HIBERNATE.md)):
+Compared to Hibernate's `@CreationTimestamp` / `@UpdateTimestamp` (see [Hibernate](../hibernate/HIBERNATE.md)):
 
 |                       | `@CreationTimestamp` (Hibernate)            | `@CreatedDate` (Spring Data)                          |
 | --------------------- | ------------------------------------------- | ----------------------------------------------------- |

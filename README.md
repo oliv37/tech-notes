@@ -4,34 +4,59 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 ## Back-end
 
-- [Java](notes/JAVA.md)
-- [Java Stream API](notes/JAVA_STREAM.md)
-- [JUnit](notes/JUNIT.md)
-- [Mockito](notes/MOCKITO.md)
-- [Servlet](notes/SERVLET.md)
-- [Spring](notes/SPRING.md)
-- [Spring Boot](notes/SPRING_BOOT.md)
-- [Spring Web MVC](notes/SPRING_WEBMVC.md)
-- [Spring Data](notes/SPRING_DATA.md)
-- [Spring REST client](notes/SPRING_REST_CLIENT.md)
-- [Spring Security](notes/SPRING_SECURITY.md)
-- [Spring Test](notes/SPRING_TEST.md)
-- [Spring Kafka](notes/SPRING_KAFKA.md)
-- [JDBC](notes/JDBC.md)
-- [Hibernate](notes/HIBERNATE.md)
-- [Hibernate cache](notes/HIBERNATE_CACHE.md)
+**Java**
+
+- [Java](notes/back-end/java/JAVA.md)
+- [Java Stream API](notes/back-end/java/JAVA_STREAM.md)
+- [Servlet](notes/back-end/java/SERVLET.md)
+
+**Spring**
+
+- [Spring](notes/back-end/spring/SPRING.md)
+- [Spring Boot](notes/back-end/spring/SPRING_BOOT.md)
+- [Spring Web MVC](notes/back-end/spring/SPRING_WEBMVC.md)
+- [Spring Data](notes/back-end/spring/SPRING_DATA.md)
+- [Spring REST client](notes/back-end/spring/SPRING_REST_CLIENT.md)
+- [Spring Security](notes/back-end/spring/SPRING_SECURITY.md)
+- [Spring Kafka](notes/back-end/spring/SPRING_KAFKA.md)
+
+**JDBC**
+
+- [JDBC](notes/back-end/jdbc/JDBC.md)
+
+**Hibernate**
+
+- [Hibernate](notes/back-end/hibernate/HIBERNATE.md)
+- [Hibernate cache](notes/back-end/hibernate/HIBERNATE_CACHE.md)
+
+**Test**
+
+- [JUnit](notes/back-end/test/JUNIT.md)
+- [Mockito](notes/back-end/test/MOCKITO.md)
+- [Spring Test](notes/back-end/test/SPRING_TEST.md)
+
+**Kafka**
+
+- [Kafka](notes/back-end/kafka/KAFKA.md)
+- [Kafka outbox pattern](notes/back-end/kafka/KAFKA_OUTBOX.md)
 
 ## Front-end
 
-- [Angular](notes/ANGULAR.md)
-- [Angular signals](notes/ANGULAR_SIGNAL.md)
-- [TypeScript](notes/TYPESCRIPT.md)
-- [RxJS](notes/RXJS.md)
+**Angular**
+
+- [Angular](notes/front-end/angular/ANGULAR.md)
+- [Angular signals](notes/front-end/angular/ANGULAR_SIGNAL.md)
+
+**TypeScript**
+
+- [TypeScript](notes/front-end/typescript/TYPESCRIPT.md)
+
+**RxJS**
+
+- [RxJS](notes/front-end/rxjs/RXJS.md)
 
 ## Cross-cutting
 
-- [HTTP](notes/HTTP.md)
-- [Kafka](notes/KAFKA.md)
-- [Kafka outbox pattern](notes/KAFKA_OUTBOX.md)
-- [Security](notes/SECURITY.md)
-- [Architecture](notes/ARCHITECTURE.md)
+- [HTTP](notes/cross-cutting/HTTP.md)
+- [Security](notes/cross-cutting/SECURITY.md)
+- [Architecture](notes/cross-cutting/ARCHITECTURE.md)

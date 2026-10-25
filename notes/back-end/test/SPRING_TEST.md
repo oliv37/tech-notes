@@ -201,7 +201,7 @@ class OrderRepositoryTest {
 
 - What it tests: derived queries, `@Query` (JPQL / native), mappings, constraints, entity graphs. Simple `save` / `findById` of Spring Data don't need a test.
 - `TestEntityManager`: an `EntityManager` for tests, to insert the data set (`persist`, `persistAndFlush`, `find`).
-- `flush()` + `clear()`: without them, the data stays in the persistence context, the SQL constraints aren't checked, and some reads come from the first-level cache (see [Hibernate cache](HIBERNATE_CACHE.md)).
+- `flush()` + `clear()`: without them, the data stays in the persistence context, the SQL constraints aren't checked, and some reads come from the first-level cache (see [Hibernate cache](../hibernate/HIBERNATE_CACHE.md)).
 - **Embedded database by default**: if H2 is on the classpath, it replaces the configured database. H2 doesn't behave like PostgreSQL (SQL dialect, native queries, types): prefer a real PostgreSQL with Testcontainers and `@AutoConfigureTestDatabase(replace = Replace.NONE)` (see below).
 - Rollback disabled: `@Transactional(propagation = Propagation.NOT_SUPPORTED)` on the class or method.
 

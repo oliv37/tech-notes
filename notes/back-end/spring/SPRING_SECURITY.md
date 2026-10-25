@@ -24,7 +24,7 @@ With Spring Boot, adding `spring-boot-starter-security` secures everything by de
 Request → DelegatingFilterProxy → FilterChainProxy → SecurityFilterChain (filters 1..n) → DispatcherServlet → controller
 ```
 
-- **`DelegatingFilterProxy`**: a servlet filter registered in the container (see [Servlet](SERVLET.md)), delegating to the Spring bean `springSecurityFilterChain`.
+- **`DelegatingFilterProxy`**: a servlet filter registered in the container (see [Servlet](../java/SERVLET.md)), delegating to the Spring bean `springSecurityFilterChain`.
 - **`FilterChainProxy`**: that bean; picks the first `SecurityFilterChain` matching the request.
 - **`SecurityFilterChain`**: an ordered list of filters, built with `HttpSecurity`; each feature adds its filter (`httpBasic()` → `BasicAuthenticationFilter`).
 

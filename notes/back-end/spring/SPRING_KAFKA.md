@@ -2,7 +2,7 @@
 
 > **In short**: Spring Kafka provides `KafkaTemplate` to produce and `@KafkaListener` to consume, configured by Spring Boot through `spring.kafka.*` properties: bootstrap servers, serializers (`JacksonJsonSerializer` with Jackson 3), consumer group. `ErrorHandlingDeserializer` keeps an unreadable message from blocking the consumer.
 
-Spring for Apache Kafka provides `KafkaTemplate` to produce and `@KafkaListener` to consume (see [Kafka](KAFKA.md) for the concepts). With Spring Boot, the configuration is done with `spring.kafka.*` properties:
+Spring for Apache Kafka provides `KafkaTemplate` to produce and `@KafkaListener` to consume (see [Kafka](../kafka/KAFKA.md) for the concepts). With Spring Boot, the configuration is done with `spring.kafka.*` properties:
 
 ```yaml
 spring:
@@ -69,7 +69,7 @@ public class OrderEventPublisher {
 - The key decides the partition, hence the ordering: use the business id of the entity (`orderId`).
 - Headers: send a `ProducerRecord` or a `Message<?>` built with `MessageBuilder.withPayload(event).setHeader(KafkaHeaders.TOPIC, "orders")`.
 
-**Database + Kafka**: in a `@Transactional` method, the database commit and the Kafka send aren't atomic: the transaction can roll back after the message was sent, or the send can fail after the commit. Reliable solution: the **outbox pattern**: the event is written in an `outbox` table in the same transaction, and a separate process (scheduler, Debezium) publishes it to Kafka (see [Kafka outbox](KAFKA_OUTBOX.md)).
+**Database + Kafka**: in a `@Transactional` method, the database commit and the Kafka send aren't atomic: the transaction can roll back after the message was sent, or the send can fail after the commit. Reliable solution: the **outbox pattern**: the event is written in an `outbox` table in the same transaction, and a separate process (scheduler, Debezium) publishes it to Kafka (see [Kafka outbox](../kafka/KAFKA_OUTBOX.md)).
 
 ## Consuming messages: @KafkaListener
 
@@ -170,7 +170,7 @@ public void onDlt(OrderCreated event, @Header(KafkaHeaders.EXCEPTION_MESSAGE) St
 
 > **In short**: An integration test with a real broker (Testcontainers + `@ServiceConnection`), sending a message and waiting for the listener's effect with Awaitility, never `Thread.sleep()`; `@EmbeddedKafka` is a lighter, in-memory alternative.
 
-An integration test with a real broker, using Testcontainers and `@ServiceConnection` (see [Spring Test](SPRING_TEST.md)): `spring.kafka.bootstrap-servers` is set automatically.
+An integration test with a real broker, using Testcontainers and `@ServiceConnection` (see [Spring Test](../test/SPRING_TEST.md)): `spring.kafka.bootstrap-servers` is set automatically.
 
 ```java
 @TestConfiguration(proxyBeanMethods = false)

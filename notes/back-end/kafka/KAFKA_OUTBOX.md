@@ -250,7 +250,7 @@ Value: {"orderId": 42, "customer": "alice", "total": 100.0}
 
 > **In short**: A normal Kafka listener, made idempotent with the event id header: already-processed ids are recorded in a table, in the same transaction as the business write.
 
-A normal Spring Kafka listener (see [Spring Kafka](SPRING_KAFKA.md)), idempotent because the relay is at-least-once:
+A normal Spring Kafka listener (see [Spring Kafka](../spring/SPRING_KAFKA.md)), idempotent because the relay is at-least-once:
 
 ```java
 @KafkaListener(topics = "order.events", groupId = "billing")

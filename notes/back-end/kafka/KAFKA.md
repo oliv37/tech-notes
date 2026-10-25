@@ -107,7 +107,7 @@ A consumer can replay a topic by resetting its offsets (`kafka-consumer-groups.s
 - **Adding partitions** changes `hash(key) % partitions`: a key may move to another partition, the order between old and new messages of that key is lost. Choose the number of partitions upfront, with some margin.
 - **Hot partition**: a very frequent key (a big customer) overloads one partition and its consumer.
 - **Slow processing**: if `poll()` isn't called within `max.poll.interval.ms` (5 minutes by default), the consumer is excluded from the group, a rebalance follows and the messages are processed again by another consumer.
-- **Poison message**: a message that always fails blocks its partition if retried forever: limited retries, then a dead letter topic (see [Spring Kafka](SPRING_KAFKA.md)).
+- **Poison message**: a message that always fails blocks its partition if retried forever: limited retries, then a dead letter topic (see [Spring Kafka](../spring/SPRING_KAFKA.md)).
 - **Message format**: JSON, or Avro / Protobuf with a schema registry, to evolve the format without breaking the consumers (adding optional fields).
 
 ## Kafka vs RabbitMQ

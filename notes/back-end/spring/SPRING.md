@@ -27,7 +27,7 @@ public class OrderService {
 ```
 
 - **Decoupling**: `OrderService` depends on interfaces, the implementation is chosen elsewhere (configuration, profile).
-- **Testability**: mocks are passed to the constructor, without Spring (see [Mockito](MOCKITO.md)).
+- **Testability**: mocks are passed to the constructor, without Spring (see [Mockito](../test/MOCKITO.md)).
 - **Shared configuration**: singletons shared by the whole application, with cross-cutting behaviour added by Spring (transactions, security).
 
 | Injection | Example | Use |

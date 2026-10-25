@@ -4,7 +4,8 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 ## Structure
 
-- One file per technology in `notes/`, named in uppercase: `notes/JAVA.md`, `notes/SPRING.md`. After adding a file, link it in `README.md` under its group (Back-end, Front-end, Cross-cutting).
+- One file per technology, named in uppercase, in a folder per group: `notes/back-end/<family>/` (`java`, including the servlet API, `spring`, `jdbc`, `hibernate`, `test`, `kafka`), `notes/front-end/<family>/` (`angular`, `typescript`, `rxjs`), `notes/cross-cutting/`. E.g. `notes/back-end/java/JAVA.md`.
+- After adding a file, link it in `README.md` under its group and family. Links between notes are relative (`../spring/SPRING.md`).
 - Each file is a list of `##` sections, one per topic or question (`## map vs flatMap`, `## Hibernate N+1 problem`). No `#` title.
 - Sections go from the simplest topic to the hardest; forward references use "see below".
 - `_old/` holds previous notes kept for reference; don't edit them.

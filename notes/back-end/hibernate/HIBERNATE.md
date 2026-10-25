@@ -32,7 +32,7 @@ void onCreate() { createdAt = updatedAt = Instant.now(); }
 void onUpdate() { updatedAt = Instant.now(); }
 ```
 
-In a Spring application, Spring Data auditing (`@CreatedDate`, `@CreatedBy`...) is often preferred, see [Spring Data](SPRING_DATA.md).
+In a Spring application, Spring Data auditing (`@CreatedDate`, `@CreatedBy`...) is often preferred, see [Spring Data](../spring/SPRING_DATA.md).
 
 ## Hibernate fetch types: LAZY vs EAGER
 

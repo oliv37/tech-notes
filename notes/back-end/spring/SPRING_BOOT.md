@@ -74,7 +74,7 @@ A profile-specific value overrides the one of `application.yml`; with several ac
 
 > **In short**: Spring Boot registers every `Filter` bean in the container, for all URLs. A `FilterRegistrationBean` controls the URL patterns, the order and the dispatcher types, or disables the automatic registration (`setEnabled(false)`) for a filter used only inside the Spring Security chain.
 
-With the embedded server, Spring Boot registers every `Filter` bean in the container (see [Servlet](SERVLET.md)): a filter declared as a `@Component` applies to every URL (`/*`), with no further configuration.
+With the embedded server, Spring Boot registers every `Filter` bean in the container (see [Servlet](../java/SERVLET.md)): a filter declared as a `@Component` applies to every URL (`/*`), with no further configuration.
 
 ```java
 @Component

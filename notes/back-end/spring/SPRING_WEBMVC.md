@@ -349,7 +349,7 @@ In short: without any code, Spring returns the right status with the `/error` JS
 
 > **In short**: A `HandlerInterceptor` runs around the controller method inside Spring MVC (`preHandle`, `postHandle`, `afterCompletion`); unlike a servlet filter, it knows the target `HandlerMethod` and its annotations. It's registered with a `WebMvcConfigurer`, with URL patterns.
 
-An interceptor runs inside Spring MVC, around the controller method called by the `DispatcherServlet`. Unlike a servlet filter (see [Servlet](SERVLET.md)), it knows which controller method handles the request.
+An interceptor runs inside Spring MVC, around the controller method called by the `DispatcherServlet`. Unlike a servlet filter (see [Servlet](../java/SERVLET.md)), it knows which controller method handles the request.
 
 ```java
 @Component
