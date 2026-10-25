@@ -118,7 +118,7 @@ Response ← Filter A ← Filter B ← DispatcherServlet ←
 
 - **Not calling `chain.doFilter()`** stops the request there: the filter answers itself (e.g. `401` when the token is invalid).
 - **Wrapping**: a filter can pass a wrapper of the request or response (`HttpServletRequestWrapper`) to modify it, e.g. to read the body twice.
-- **Order** matters: `@Order` or `FilterRegistrationBean.setOrder()` in Spring Boot. A filter declared as a `@Component` is registered automatically for every URL; `FilterRegistrationBean` restricts it to some URL patterns.
+- **Order** matters: `@Order` or `FilterRegistrationBean.setOrder()` in Spring Boot. A filter declared as a `@Component` is registered automatically for every URL; `FilterRegistrationBean` restricts it to some URL patterns (see [Spring Boot](SPRING_BOOT.md)).
 - **`OncePerRequestFilter`** (Spring): guarantees a single execution per request, even when the request is forwarded internally (`forward`, error dispatch), where a plain filter could run twice.
 
 Filter vs Spring `HandlerInterceptor`: a filter belongs to the container and runs before the `DispatcherServlet`, for every request (static files included), without knowing the controller. An interceptor runs inside Spring MVC, around the controller method, with access to the `HandlerMethod` (e.g. its annotations). See [Spring Web MVC](SPRING_WEBMVC.md).

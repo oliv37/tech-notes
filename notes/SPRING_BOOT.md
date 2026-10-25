@@ -64,6 +64,66 @@ shop:
 
 A profile-specific value overrides the one of `application.yml`; with several active profiles, the last one wins.
 
+## Registering a servlet filter (FilterRegistrationBean)
+
+With the embedded server, Spring Boot registers every `Filter` bean in the container (see [Servlet](SERVLET.md)): a filter declared as a `@Component` applies to every URL (`/*`), with no further configuration.
+
+```java
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
+public class RequestIdFilter extends OncePerRequestFilter {
+  @Override
+  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                  FilterChain chain) throws ServletException, IOException {
+    MDC.put("requestId", UUID.randomUUID().toString());
+    try {
+      chain.doFilter(request, response);
+    } finally {
+      MDC.remove("requestId");
+    }
+  }
+}
+```
+
+**`FilterRegistrationBean`** gives full control over the registration: URL patterns, order, dispatcher types, name, init parameters.
+
+```java
+@Configuration
+public class FilterConfig {
+
+  @Bean
+  FilterRegistrationBean<AuditFilter> auditFilter(AuditLog auditLog) {
+    FilterRegistrationBean<AuditFilter> registration = new FilterRegistrationBean<>(new AuditFilter(auditLog));
+    registration.addUrlPatterns("/api/*");               // servlet patterns, not Ant patterns: /api/* not /api/**
+    registration.setOrder(1);                            // lower = earlier
+    registration.setDispatcherTypes(DispatcherType.REQUEST); // default: REQUEST only
+    registration.setName("auditFilter");
+    return registration;
+  }
+}
+```
+
+Same thing with an annotation on the `@Bean` method (Spring Boot 3.5+): `@FilterRegistration(name = "auditFilter", urlPatterns = "/api/*", order = 1)`.
+
+When to use it:
+
+- **Restrict a filter to some URLs**: a `@Component` filter applies everywhere.
+- **Order a filter whose class can't be changed** (a third-party filter): the order comes from `@Order` / `Ordered` on the filter class, or from `setOrder()`. `@Order` on a `@Bean` method has no effect on a filter.
+- **Disable the automatic registration**: a filter bean added to the Spring Security chain (`http.addFilterBefore(jwtFilter, ...)`) is also registered by Spring Boot in the container, so it runs twice (once only with `OncePerRequestFilter`, but still outside the security chain's URL matching). Fix:
+
+```java
+@Bean
+FilterRegistrationBean<JwtFilter> jwtFilterRegistration(JwtFilter filter) {
+  FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(filter);
+  registration.setEnabled(false); // not registered in the container, only in the security chain
+  return registration;
+}
+```
+
+- Debugging: `logging.level.web=debug` logs every registered filter with its order and URL patterns at startup.
+- Spring Security's own chain is registered the same way, as one filter (`DelegatingFilterProxyRegistrationBean`, order `-100` by default, `spring.security.filter.order`): a filter with a lower order runs before security.
+- Same principle for servlets and listeners: `ServletRegistrationBean`, `ServletListenerRegistrationBean`. `@WebFilter` / `@WebServlet` classes are registered with `@ServletComponentScan`.
+
 ## Conditional auto-configuration (@ConditionalOn...)
 
 Spring Boot's auto-configuration is a set of `@AutoConfiguration` classes (Boot 2.7+, meta-annotated with `@Configuration(proxyBeanMethods = false)`, with `before` / `after` attributes to order them), listed in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. Their beans are created only under conditions, built on Spring's `@Conditional` (see [Spring](SPRING.md)):
