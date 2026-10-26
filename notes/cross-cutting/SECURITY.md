@@ -52,7 +52,7 @@ ps.setString(1, name);
 
 - Angular escapes interpolation (`{{ }}`) and sanitizes `[innerHTML]` by default.
 - The risks come from bypassing it: `bypassSecurityTrustHtml()`, direct DOM access (`nativeElement.innerHTML`), or a compromised third-party script or npm dependency.
-- A Content Security Policy (`Content-Security-Policy` header) limits which scripts can run, as a second line of defense.
+- A Content Security Policy (`Content-Security-Policy` response header, see security headers below) limits which scripts can run, as a second line of defense. Only a strict policy (no `'unsafe-inline'`) also blocks injected inline scripts and event handlers; it limits the impact of an XSS, it doesn't prevent the injection (HTML can still be injected: a fake form, misleading content).
 
 **CSRF** (Cross-Site Request Forgery): a malicious site makes the user's browser send a request to the application (a hidden form, an image). The browser automatically attaches the application's cookies, so the request is authenticated without the user knowing. The attacker can't read the response, but the action (transfer, deletion) is performed.
 
@@ -97,7 +97,9 @@ eyJhbGciOiJSUzI1NiJ9 . eyJzdWIiOiI0MiIsInNjb3BlIjoib3JkZXJzIiwiZXhwIjoxNzYxNDc4M
 | `scope`, `roles` | permissions (custom claims) |
 
 - **Signature**: `HS256` uses a shared secret (whoever can verify can also forge); `RS256` / `ES256` use a key pair: the authorization server signs with its private key, the APIs verify with the public key, published at a JWKS URL. Asymmetric is the norm between services.
-- **Validation**: signature with an expected algorithm (reject `alg: none`, a classic attack), `exp`, `iss`, `aud`. Libraries and Spring's resource server do it; never decode a JWT and trust it without checking the signature.
+- **How the signature is checked**: it covers `header.payload`. With RS256, the authorization server signs the SHA-256 hash of it with its private key; the API recomputes the hash and checks, with the public key, that the signature matches it. Changing one character of the payload breaks it.
+- **Getting the public key**: from the `issuer-uri`, the API reads `/.well-known/openid-configuration`, then the JWKS (`jwks_uri`, the published public keys). The `kid` in the JWT header tells which key signed it, which allows key rotation. Keys are cached: validation is local, no call to the authorization server per request.
+- **Validation**: signature with an expected algorithm (reject `alg: none`, and an HS256 token verified with the RSA public key as HMAC secret: algorithm confusion), then `exp`, `iss`, `aud`. Libraries and Spring's resource server (`NimbusJwtDecoder`) do it; never decode a JWT and trust it without checking the signature.
 - **Revocation**: a JWT stays valid until `exp`. Hence short-lived access tokens (5 to 15 minutes) and a refresh token to get new ones, revocable on the authorization server.
 - Size: a JWT with many claims makes every request heavier; it's not a place for user data.
 
@@ -170,4 +172,4 @@ eyJhbGciOiJSUzI1NiJ9 . eyJzdWIiOiI0MiIsInNjb3BlIjoib3JkZXJzIiwiZXhwIjoxNzYxNDc4M
 | A10 | Mishandling of exceptional conditions | errors leave the application in an unsafe state: a check failing open (access granted when the permission service is down), stack traces in responses, partial updates without rollback; fail closed, generic error messages |
 
 - 2025 changes from 2021: supply chain failures and mishandling of exceptional conditions are new, SSRF is merged into broken access control, misconfiguration moves to second place.
-- **SSRF** (Server-Side Request Forgery): the server fetches a URL given by the user (`?image=http://169.254.169.254/...`) and reaches internal services; validate and whitelist the destinations.
+- **SSRF** (Server-Side Request Forgery): a feature fetches a URL given by the user (image import, link preview, webhook), and the attacker gives an internal one: `http://169.254.169.254/...` (cloud metadata: the server's credentials), `http://localhost:8080/actuator/env`, an internal service without authentication. The server is inside the network, the attacker uses it as a relay. Defenses: whitelist the domains; otherwise reject private and loopback addresses after DNS resolution (a public name can point to `127.0.0.1`), allow only `http` / `https`, don't follow redirects; restrict outgoing traffic, IMDSv2 on AWS.
