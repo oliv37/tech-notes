@@ -98,7 +98,7 @@ request("PATCH", "/api"); // error: not in the union
 ```
 
 - On a union, only the members common to all types are accessible until the type is narrowed (see below).
-- **Literal union vs `enum`**: a union of strings is erased at compilation (no JavaScript generated) and works directly with the values of an API; an `enum` generates a runtime object. Unions (or `as const` objects) are usually preferred.
+- **Literal union vs `enum`**: a union of strings is erased at compilation (no JavaScript generated) and works directly with the values of an API; an `enum` generates a runtime object. Unions (or `as const` objects) are usually preferred (see enum vs literal union below).
 
 ## `as const`
 
@@ -113,6 +113,62 @@ const colors = ["red", "green", "blue"];
 const colorsConst = ["red", "green", "blue"] as const;
 // readonly ["red", "green", "blue"] — a fixed-length tuple of literal types
 ```
+
+## enum vs literal union vs `as const` object
+
+> **In short**: An `enum` generates a runtime object and a string enum doesn't accept plain strings (`"ADMIN"` must be written `Role.Admin`), which is awkward with API values. Numeric enums have a reverse mapping and values that shift when members are reordered. Prefer a literal union, or an `as const` object when the values are needed at runtime; a string enum remains acceptable, avoid numeric and `const` enums.
+
+**Numeric enum**: members are numbered from `0` unless a value is given, and the generated object maps both ways (reverse mapping).
+
+```ts
+enum Status { Active, Inactive, Banned } // 0, 1, 2
+
+// generated object: { Active: 0, Inactive: 1, Banned: 2, 0: "Active", 1: "Inactive", 2: "Banned" }
+Status.Inactive; // 1
+Status[1];       // "Inactive"
+Object.values(Status); // ["Active", "Inactive", "Banned", 0, 1, 2]
+```
+
+- Inserting or reordering a member shifts the values: a `1` stored in a database or sent by the API silently changes meaning. Same pitfall as JPA's `EnumType.ORDINAL`.
+- Values mean nothing outside the code: `"status": 1` in the JSON or the logs.
+- Loose checks: since TS 5.0 `const s: Status = 42` is an error, but any `number` variable is still accepted.
+
+**String enum**: no reverse mapping, readable and stable values, but nominal: a plain string isn't accepted.
+
+```ts
+enum Role { Admin = "ADMIN", User = "USER" }
+
+const a: Role = Role.Admin; // OK
+const b: Role = "ADMIN";    // error: Type '"ADMIN"' is not assignable to type 'Role'
+```
+
+**Alternatives**: a literal union when only the type is needed, an `as const` object when the values are also needed at runtime (`Role.Admin`, iterating over the values).
+
+```ts
+type Role = "ADMIN" | "USER";
+
+// or
+const Role = { Admin: "ADMIN", User: "USER" } as const;
+type Role = (typeof Role)[keyof typeof Role]; // "ADMIN" | "USER" (see keyof, typeof below)
+
+const a: Role = Role.Admin; // OK
+const b: Role = "ADMIN";    // OK: API values are accepted as they are
+Object.values(Role);        // ["ADMIN", "USER"]
+```
+
+The same name `Role` is both a value and a type: TypeScript keeps values and types in separate namespaces.
+
+| | Numeric `enum` | String `enum` | Literal union | `as const` object |
+|---|---|---|---|---|
+| Generated JavaScript | yes (two-way object) | yes | no | yes, a plain object |
+| Accepts `"ADMIN"` | — | no | yes | yes |
+| `Role.Admin` | yes | yes | no | yes |
+| Iterate over the values | names and numbers mixed | `Object.values` | no (nothing at runtime) | `Object.values` |
+| Allowed by `erasableSyntaxOnly` | no | no | yes | yes |
+
+- `const enum` is inlined by `tsc`, but single-file transpilers (esbuild in the Angular CLI, `isolatedModules`) can't inline it across files: avoid it.
+- `erasableSyntaxOnly` (TS 5.8) forbids enums because they generate code, for code run by Node's type stripping.
+- In an Angular template, an `enum` or an `as const` object must be exposed by the component (`protected readonly Role = Role;`); with a union, compare with the string directly (`@if (user.role === 'ADMIN')`).
 
 ## `satisfies` vs explicit type annotation
 
