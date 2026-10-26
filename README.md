@@ -50,6 +50,7 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 **TypeScript**
 
 - [TypeScript](notes/front-end/typescript/TYPESCRIPT.md)
+- [TypeScript classes](notes/front-end/typescript/TYPESCRIPT_CLASS.md)
 
 **RxJS**
 
