@@ -11,11 +11,13 @@ export const routes: Routes = [
   { path: "", component: HomeComponent }, // eager: in the main bundle
   {
     path: "admin",
-    loadChildren: () => import("./admin/admin.routes").then((m) => m.ADMIN_ROUTES),
+    loadChildren: () =>
+      import("./admin/admin.routes").then((m) => m.ADMIN_ROUTES),
   },
   {
     path: "profile",
-    loadComponent: () => import("./profile/profile.component").then((m) => m.ProfileComponent),
+    loadComponent: () =>
+      import("./profile/profile.component").then((m) => m.ProfileComponent),
   },
 ];
 ```
@@ -28,11 +30,11 @@ export const routes: Routes = [
 
 ```html
 @defer (on viewport) {
-  <app-comments [postId]="postId" />
+<app-comments [postId]="postId" />
 } @placeholder {
-  <p>Comments</p>
+<p>Comments</p>
 } @loading (minimum 300ms) {
-  <app-spinner />
+<app-spinner />
 }
 ```
 
@@ -41,7 +43,7 @@ export const routes: Routes = [
 
 ## Angular Interceptor
 
-> **In short**: A functional interceptor (`HttpInterceptorFn`) sees every `HttpClient` request and response: the place for cross-cutting concerns like adding the auth token or handling errors globally. Requests are immutable (`req.clone()`), and interceptors run in array order for requests, reverse order for responses.
+> **In short**: A functional interceptor (`HttpInterceptorFn`) sees every `HttpClient` request and response: the place for cross-cutting concerns like adding the auth token or handling errors globally. Requests and responses are immutable (`clone()`), errors are handled with `catchError` on `next(req)`, and interceptors run in array order for requests, reverse order for responses.
 
 An interceptor is a function that sits between `HttpClient` and the backend. Every HTTP request goes through it, so it is the place for cross-cutting concerns: adding an auth token, handling errors globally, logging, showing a loader.
 
@@ -78,6 +80,92 @@ export const appConfig: ApplicationConfig = {
 ```
 
 The order matters: requests go through interceptors in the array order (`auth` → `error` → backend), and responses come back in reverse order (backend → `error` → `auth`). Here `errorInterceptor` sees the request with the token already added, and handles errors before `authInterceptor` gets the response.
+
+**Handling errors**: pipe `catchError` on `next(req)`. An HTTP error arrives as an `HttpErrorResponse` (`status`, `error` = the response body, `status === 0` for a network error or CORS failure).
+
+```typescript
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router); // here, not inside catchError: no injection context there
+  const notification = inject(NotificationService);
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401) {
+        router.navigate(["/login"]);
+      } else if (error.status === 0 || error.status >= 500) {
+        notification.error("Server unavailable, try again later");
+      }
+      return throwError(() => error); // rethrow so the caller still sees the error
+    }),
+  );
+};
+```
+
+- Rethrowing with `throwError` lets the component still react (stop a spinner, show a field error). Returning `EMPTY` or `of(...)` instead swallows the error: the caller never knows the request failed.
+- `retry({ count: 2, delay: 1000 })` before `catchError` retries transient failures; only for idempotent requests (`GET`), never a `POST` that could create a resource twice.
+- To skip the global handling for one request, pass a flag with `HttpContext` (`new HttpContextToken(() => false)`) and read it in the interceptor with `req.context.get(...)`.
+
+**Modifying the response**: `next(req)` doesn't emit only the response but a stream of `HttpEvent` (`Sent`, upload/download progress, then the `HttpResponse`). Filter on `HttpResponse` and copy it with `event.clone(...)`, since it is immutable like the request. E.g. a backend that wraps every body in `{ data: ... }`:
+
+```typescript
+const isWrapped = (body: unknown): body is { data: unknown } =>
+  typeof body === "object" && body !== null && "data" in body;
+
+export const unwrapInterceptor: HttpInterceptorFn = (req, next) =>
+  next(req).pipe(
+    map((event) =>
+      event instanceof HttpResponse && isWrapped(event.body)
+        ? event.clone({ body: event.body.data })
+        : event,
+    ),
+  );
+```
+
+- The other events must be passed through unchanged, or progress tracking breaks.
+- `http.get<User>()` doesn't check anything at runtime: the generic only types what the interceptor chain produces, so the component gets `User`, not `{ data: User }`.
+- Same pattern for converting date strings to `Date`, or reading a response header (`event.headers.get("X-Total-Count")`).
+
+**Refreshing the token on `401`**: catch the `401`, refresh the token, then replay the request with `switchMap`. Several requests can fail at the same time, so the service shares a single in-flight refresh:
+
+```typescript
+@Injectable({ providedIn: "root" })
+export class AuthService {
+  private readonly http = inject(HttpClient);
+  private refresh$: Observable<void> | null = null;
+
+  refresh(): Observable<void> {
+    this.refresh$ ??= this.http.post<void>("/auth/refresh", null).pipe(
+      finalize(() => (this.refresh$ = null)), // the next 401 starts a new refresh
+      shareReplay(1), // concurrent callers share the same request
+    );
+    return this.refresh$;
+  }
+}
+
+export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status !== 401 || req.url.endsWith("/auth/refresh")) {
+        return throwError(() => error);
+      }
+      return auth.refresh().pipe(
+        catchError((refreshError) => {
+          router.navigate(["/login"]); // refresh token expired or revoked
+          return throwError(() => refreshError);
+        }),
+        switchMap(() => next(req)), // replayed once, with the new token
+      );
+    }),
+  );
+};
+```
+
+- The `/auth/refresh` exclusion avoids an infinite loop: the refresh request itself goes through the interceptor.
+- With tokens in `HttpOnly` cookies (see below), the replayed request carries the new cookie automatically. With a token in memory, the replay must add it: `next(req.clone({ setHeaders: { Authorization: ... } }))`.
+- Without the shared `refresh$`, 5 parallel `401`s start 5 refreshes; with refresh token rotation, the first one invalidates the refresh token and the 4 others fail.
 
 ## Angular error handling and ErrorHandler
 
@@ -118,9 +206,9 @@ export const appConfig: ApplicationConfig = {
 
 ```html
 @defer (on viewport) {
-  <app-comments />
+<app-comments />
 } @error {
-  <p>Comments could not be loaded.</p>
+<p>Comments could not be loaded.</p>
 }
 ```
 
@@ -132,9 +220,9 @@ user = httpResource<User>(() => `/api/users/${this.userId()}`);
 
 ```html
 @if (user.error()) {
-  <p>Could not load the user.</p>
+<p>Could not load the user.</p>
 } @else if (user.hasValue()) {
-  <p>{{ user.value().name }}</p>
+<p>{{ user.value().name }}</p>
 }
 ```
 
@@ -142,13 +230,14 @@ user = httpResource<User>(() => `/api/users/${this.userId()}`);
 
 ```html
 @boundary {
-  <p>{{ user.value().name }}</p> <!-- no manual error() check needed -->
-  <app-chart />
+<p>{{ user.value().name }}</p>
+<!-- no manual error() check needed -->
+<app-chart />
 } @error (let err; retry = $reset; when isNetworkError(err)) {
-  <p>Network issue: {{ err.message }}</p>
-  <button (click)="retry()">Retry</button>
+<p>Network issue: {{ err.message }}</p>
+<button (click)="retry()">Retry</button>
 } @error {
-  <p>Something went wrong.</p>
+<p>Something went wrong.</p>
 }
 ```
 
@@ -181,6 +270,50 @@ How it works in practice:
 - To run several BFF instances, store the sessions in a shared store (Redis with Spring Session), so any instance can serve any request and logout simply deletes the session.
 
 A stateless BFF (encrypted tokens directly in the cookie) also scales without Redis, but comes with trade-offs: cookie size (often > 4 KB), concurrent refreshes that can revoke the session when refresh token rotation is enabled, and no server-side revocation. The stateful BFF with a shared session store remains the recommended approach.
+
+## BFF vs access token in an HttpOnly cookie
+
+> **In short**: Both keep the token away from JavaScript, so both resist token theft by XSS, and both need CSRF protection. The BFF goes further: the browser only holds an opaque session id, so the refresh token never leaves the server, logout is immediate, and a stolen cookie only works through the BFF. The JWT cookie is stateless (no shared store for several instances), at the cost of revocation, cookie size and refresh handled by hand.
+
+In both cases a Spring backend performs the OAuth login and sets the cookie; the difference is what the cookie contains.
+
+|                                              | `localStorage`   | In memory           | JWT in `HttpOnly` cookie                                   | BFF (session id in `HttpOnly` cookie) |
+| -------------------------------------------- | ---------------- | ------------------- | ---------------------------------------------------------- | ------------------------------------- |
+| Token readable by an XSS                     | yes              | yes                 | no                                                         | no                                    |
+| XSS can send requests while the page is open | yes              | yes                 | yes                                                        | yes                                   |
+| CSRF to handle                               | no               | no                  | yes                                                        | yes                                   |
+| Survives a page refresh                      | yes              | no                  | yes                                                        | yes                                   |
+| Refresh token location                       | browser          | browser (or cookie) | browser cookie                                             | server only                           |
+| A stolen cookie gives                        | —                | —                   | a JWT usable against any API that accepts it, until expiry | a session usable only through the BFF |
+| Logout / revocation                          | expiry           | expiry              | expiry of the access token                                 | immediate (delete the session)        |
+| Size limit                                   | none             | none                | ~4 KB per cookie                                           | none (short id)                       |
+| Several instances                            | nothing to share | nothing to share    | nothing to share (stateless)                               | shared session store (Redis)          |
+| APIs receive                                 | `Bearer`         | `Bearer`            | the cookie (custom `BearerTokenResolver`), same site only  | standard `Bearer`, added by the BFF   |
+
+Why the BFF is considered better, although the cookie is `HttpOnly` in both cases:
+
+- **The refresh token stays on the server.** With the JWT cookie, the refresh token also lives in a browser cookie: stolen, it gives new access tokens for days. With the BFF, the browser has nothing long-lived beyond a session the server can kill.
+- **`HttpOnly` isn't the only way to steal a cookie.** A browser extension with the `cookies` permission, or malware reading the browser's cookie store, can read `HttpOnly` cookies. A stolen JWT works directly against every API that trusts the token, from anywhere; a stolen session id only works through the BFF, which can revoke it.
+- **Immediate logout.** Deleting the session cuts access at once; a JWT stays valid until it expires, whatever logout does with the cookies.
+- **Downstream APIs stay standard.** They keep validating a `Bearer` token, can live on other domains, and don't need CSRF protection; with the JWT cookie, every API must read the cookie and protect itself against CSRF.
+
+When the JWT cookie is a reasonable choice: a single Spring app that is both the OAuth client and the API, with a short access token (5-15 min) and the refresh cookie restricted to `Path=/auth/refresh`. The security gap with the BFF is then small, and it avoids running Redis. The BFF wins as soon as there are several APIs, long sessions, or a need for immediate revocation.
+
+**Where the refresh token lives** with a JWT cookie: usually in a second `HttpOnly` cookie, set by the backend at the same time, restricted to the refresh endpoint:
+
+```text
+Set-Cookie: access_token=eyJ...; HttpOnly; Secure; SameSite=Lax; Path=/api; Max-Age=600
+Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=604800
+```
+
+- `Path=/auth/refresh`: the refresh token isn't sent with every API call, only to the refresh endpoint. `SameSite=Strict` is fine there, since it's only called by `fetch` from the application's own pages.
+- On `401`, Angular calls `POST /auth/refresh` (see the refresh interceptor above); any instance reads the cookie, calls the authorization server's token endpoint with the client secret, and sets both cookies again.
+- Variants: encrypt the refresh token in the cookie (a thief can't use it directly at the authorization server, only replay it through `/auth/refresh`); keep it server-side behind a key (no longer stateless: almost a BFF); or no refresh token at all, redirecting to the authorization server, which issues a new `code` silently while its own SSO session is valid (full page reload, the SPA state is lost).
+
+Pitfalls of the JWT cookie:
+
+- Stateless APIs often use `csrf.disable()`, which is safe with a `Bearer` header; with authentication in a cookie, CSRF protection must stay enabled.
+- Concurrent `401`s from several requests or tabs trigger several refreshes; with refresh token rotation, all but the first fail. The Angular side must share a single in-flight refresh (see above); between tabs the race remains, some authorization servers accept the previous refresh token for a short grace period.
 
 ## Forcing the caller to handle errors
 
