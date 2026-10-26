@@ -136,7 +136,7 @@ export class AuthService {
   refresh(): Observable<void> {
     this.refresh$ ??= this.http.post<void>("/auth/refresh", null).pipe(
       finalize(() => (this.refresh$ = null)), // the next 401 starts a new refresh
-      shareReplay(1), // concurrent callers share the same request
+      shareReplay(1), // one request for concurrent callers, not cancelled if they all unsubscribe
     );
     return this.refresh$;
   }
@@ -166,6 +166,7 @@ export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
 - The `/auth/refresh` exclusion avoids an infinite loop: the refresh request itself goes through the interceptor.
 - With tokens in `HttpOnly` cookies (see below), the replayed request carries the new cookie automatically. With a token in memory, the replay must add it: `next(req.clone({ setHeaders: { Authorization: ... } }))`.
 - Without the shared `refresh$`, 5 parallel `401`s start 5 refreshes; with refresh token rotation, the first one invalidates the refresh token and the 4 others fail.
+- `shareReplay(1)` rather than `share()`: the replay is never used (`finalize` resets `refresh$`, so later calls create a new refresh), but `share()` unsubscribes from the source when all subscribers leave, which cancels the `POST`. If the only waiting request is cancelled (`switchMap`, component destroyed), the server may have already rotated the refresh token while the response with the new cookies is dropped: the user is logged out. `shareReplay` keeps the source running (`refCount: false` by default); `share({ resetOnRefCountZero: false })` does the same.
 
 ## Angular error handling and ErrorHandler
 
