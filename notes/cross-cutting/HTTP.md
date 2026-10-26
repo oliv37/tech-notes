@@ -224,4 +224,5 @@ Access-Control-Max-Age: 3600                 (preflight cached for 1 hour)
 | Use | simple, low frequency | notifications, progress, live feeds | chat, collaborative editing, games |
 
 - SSE in Spring MVC: return an `SseEmitter`, or a `Flux<ServerSentEvent<?>>` with WebFlux.
-- Scaling: SSE and WebSocket keep connections open, so with several instances, an event must reach the instance holding the client's connection (Redis pub/sub, Kafka).
+- **Several instances**: the client's connection is held in memory by one instance, but the event may happen on another one (a message from another user, a Kafka message, a scheduled job, a webhook). The event is published to a shared channel that every instance listens to (Redis pub/sub, Kafka with one consumer group per instance, a STOMP broker relay), and the instance holding the connection forwards it.
+- Sticky sessions (the load balancer always sends a client to the same instance, with a cookie or an IP hash) don't solve it: they route the client's own requests, not events coming from elsewhere.
