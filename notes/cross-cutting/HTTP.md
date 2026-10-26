@@ -112,6 +112,8 @@ Set-Cookie: SESSION=a1b2c3; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=1800
 | `Max-Age` / `Expires` | persistent cookie; without them, deleted when the browser closes |
 | `Domain`, `Path` | where the cookie is sent |
 
+`Lax` vs `Strict` for a session cookie: with `Strict`, a user arriving from a link in an email or another site looks logged out on the first page, since the cookie isn't sent on that navigation. Hence `Lax` for the session cookie, `Strict` for cookies only used by the application's own `fetch` calls (e.g. a refresh token cookie).
+
 ## HTTP caching: Cache-Control
 
 > **In short**: `Cache-Control` tells clients and proxies whether and how long a response can be reused: `max-age` (reuse without asking), `no-cache` (store but revalidate each time), `no-store` (never store), `private` / `public`, `immutable`. Typical SPA setup: `index.html` with `no-cache`, hashed bundles cached for a year.
