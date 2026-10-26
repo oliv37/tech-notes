@@ -184,6 +184,7 @@ function label(state: PaymentState): string {
 }
 ```
 
+- Same `|` syntax as any union (the leading `|` is optional formatting): what makes it discriminated is the shared literal property. In a plain union, cases are told apart by their structure (`in`, `typeof`).
 - Models states where each case has its own data, instead of one object with many optional fields (`transactionId?`, `reason?`), where impossible combinations compile.
 - The TypeScript equivalent of Java's sealed interfaces + pattern matching `switch`.
 - Used for error results in Angular services (see [Angular](../angular/ANGULAR.md), forcing the caller to handle errors).
