@@ -287,6 +287,42 @@ SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
 - In a controller: `@AuthenticationPrincipal Jwt jwt` gives access to the claims (`jwt.getSubject()`).
 - `STATELESS`: no HTTP session, the context is rebuilt from the token on each request. Logout = token expiry (short-lived access tokens, refresh tokens handled by the client).
 
+## Same app as OAuth client and API: session or JWT cookie
+
+> **In short**: When one Spring app serves both the Angular front-end's login and the API, it can keep the tokens out of the browser. Either `oauth2Login()` with a session (the app is a BFF, the browser only gets `JSESSIONID`; Spring Session + Redis for several instances), or a JWT in an `HttpOnly` cookie read by a custom `BearerTokenResolver` (stateless). In both cases authentication goes through a cookie, so CSRF stays enabled.
+
+**Session (BFF merged with the API)**: the app is the OAuth client, it performs the login with the authorization server and keeps the tokens in the HTTP session.
+
+```java
+@Bean
+SecurityFilterChain browserChain(HttpSecurity http) throws Exception {
+  http
+      .oauth2Login(Customizer.withDefaults()) // login flow, tokens kept in the session
+      .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+      .csrf(csrf -> csrf.spa()); // Spring Security 7: XSRF-TOKEN cookie for Angular
+  return http.build();
+}
+```
+
+- The API endpoints are protected by the session: no `oauth2ResourceServer()` needed for calls from Angular.
+- If other services also call the API with a `Bearer` token, add a second `SecurityFilterChain` (with `securityMatcher` and `@Order`) configured as a resource server.
+- Several instances: Spring Session with Redis shares the sessions, no sticky sessions needed.
+
+**JWT in an `HttpOnly` cookie (stateless)**: the app sets the access token in a cookie and validates it as a resource server. `DefaultBearerTokenResolver` only reads the `Authorization` header (and optionally a request parameter), so the cookie needs a custom resolver:
+
+```java
+http.oauth2ResourceServer(rs -> rs
+    .bearerTokenResolver(request -> {
+      Cookie cookie = WebUtils.getCookie(request, "access_token");
+      return cookie != null ? cookie.getValue() : null;
+    })
+    .jwt(Customizer.withDefaults()));
+```
+
+- No shared store: any instance validates the JWT with the issuer's public key.
+- The trade-offs (refresh token in a browser cookie, revocation, cookie size) are compared with the BFF in [BFF vs access token in an HttpOnly cookie](../../front-end/angular/ANGULAR.md#bff-vs-access-token-in-an-httponly-cookie).
+- Unlike the stateless API above, `csrf.disable()` is a vulnerability here: the browser sends the cookie automatically.
+
 ## Spring Security 7 (Spring Boot 4)
 
 > **In short**: Lambda DSL only (`and()` and `authorizeRequests()` removed), `PathPatternRequestMatcher` replaces the Ant matchers, initial MFA support, `csrf.spa()`, and Spring Authorization Server is now part of Spring Security.
