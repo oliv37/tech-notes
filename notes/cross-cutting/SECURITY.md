@@ -57,7 +57,7 @@ ps.setString(1, name);
 **CSRF** (Cross-Site Request Forgery): a malicious site makes the user's browser send a request to the application (a hidden form, an image). The browser automatically attaches the application's cookies, so the request is authenticated without the user knowing. The attacker can't read the response, but the action (transfer, deletion) is performed.
 
 - Only affects authentication sent automatically by the browser (cookies), not a token added in the `Authorization` header by JavaScript.
-- `SameSite=Lax` (default in modern browsers) or `Strict` blocks most cases. `Lax` still sends the cookie on top-level `GET` navigations, so `GET` requests must never modify data.
+- `SameSite=Lax` (default in Chromium browsers when the attribute is missing, not in Firefox and Safari: always set it explicitly) or `Strict` blocks most cases. `Lax` still sends the cookie on top-level `GET` navigations, so `GET` requests must never modify data.
 - `SameSite` works at site level, not origin: `evil.example.com` is the same site as `app.example.com`. A CSRF token covers this case.
 
 The two are linked: an XSS bypasses any CSRF protection, since the malicious script runs from the application itself and can read the CSRF token.
