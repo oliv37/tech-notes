@@ -74,6 +74,25 @@ public UserDto me(@AuthenticationPrincipal UserDetails user) {
 - `ThreadLocal`: the context isn't propagated to another thread (`@Async`, `CompletableFuture`) unless wrapped (`DelegatingSecurityContextExecutor`).
 - Between requests, the context is kept in the HTTP session (stateful login), or rebuilt on each request from a token (stateless API).
 
+**`Principal`, `Authentication` and `UserDetails`**: the word "principal" is used at two levels.
+
+```text
+java.security.Principal          (JDK)              getName()
+  └─ Authentication              (Spring Security)  + getAuthorities(), getCredentials(), getDetails(),
+                                                      getPrincipal(), isAuthenticated()
+       └─ getPrincipal() → Object: the user itself
+            ├─ UserDetails       (login/password)   getUsername(), getPassword(), getAuthorities(), isEnabled()...
+            ├─ Jwt               (resource server)
+            └─ OAuth2User / OidcUser (oauth2Login)
+```
+
+- **`Principal`** (JDK, also returned by the servlet API's `request.getUserPrincipal()`): just a name.
+- **`Authentication`** extends `Principal`: it's the authentication result, the object checked by authorization. `getName()` delegates to the user object (`UserDetails.getUsername()`, the `sub` claim of a `Jwt`).
+- **`getPrincipal()`** returns the user object, whose type depends on the `Authentication` implementation (`UsernamePasswordAuthenticationToken` → `UserDetails`, `JwtAuthenticationToken` → `Jwt`, `OAuth2AuthenticationToken` → `OAuth2User`).
+- The same token type is used before and after authentication, with different content: the login filter creates `UsernamePasswordAuthenticationToken.unauthenticated("alice", "secret")` (principal = the username `String`, not authenticated), and the `AuthenticationManager` returns a new, authenticated token (principal = the `UserDetails`, credentials erased, authorities filled). Only the latter is stored in the `SecurityContext`.
+- **`UserDetails`** doesn't extend `Principal`: it's the user as loaded by the `UserDetailsService` (see below). After authentication, the provider copies its authorities into the `Authentication`, and those are the ones checked.
+- In a controller: a `Principal` or `Authentication` parameter gives the `Authentication`; `@AuthenticationPrincipal` gives `getPrincipal()`, already cast (`UserDetails`, `Jwt`).
+
 ## Configuring a SecurityFilterChain
 
 > **In short**: The security rules are a `SecurityFilterChain` bean configured with `HttpSecurity` and the lambda DSL: `authorizeHttpRequests` rules checked in order (first match wins), then the authentication methods (form login, HTTP Basic, JWT). Several chains can coexist, each limited to some URLs with `securityMatcher`.
