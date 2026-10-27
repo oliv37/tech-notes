@@ -61,3 +61,4 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 - [HTTP](notes/cross-cutting/HTTP.md)
 - [Security](notes/cross-cutting/SECURITY.md)
 - [Architecture](notes/cross-cutting/ARCHITECTURE.md)
+- [Hexagonal architecture](notes/cross-cutting/HEXAGONAL_ARCHITECTURE.md)
