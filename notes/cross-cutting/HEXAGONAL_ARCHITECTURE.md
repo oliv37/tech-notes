@@ -283,3 +283,28 @@ class ArchitectureTest {
 ```
 
 ArchUnit also has a predefined rule for this layout: `Architectures.onionArchitecture()` (domain models, domain services, application services, adapters).
+
+## Hexagonal vs layered, onion and clean architecture
+
+> **In short**: The layered architecture makes the business depend on persistence. Onion (Palermo) and Clean Architecture (Robert C. Martin) share the hexagonal idea: the domain at the center, dependencies pointing inwards. They differ mostly in vocabulary and in how much they prescribe the inside of the core; hexagonal only separates the inside from the outside through ports.
+
+| | Layered (n-tier) | Hexagonal (Cockburn, 2005) | Onion (Palermo, 2008) | Clean (Martin, 2012) |
+|---|---|---|---|---|
+| Shape | stacked layers | a core with ports, adapters around | concentric circles | concentric circles |
+| Dependencies | top to bottom: business → persistence | inwards | inwards | inwards ("dependency rule") |
+| Inside of the core | — | not prescribed | domain model, domain services, application services | entities, use cases |
+| Outside | presentation, persistence | driving and driven adapters | UI, infrastructure, tests | interface adapters, frameworks and drivers |
+
+- The three "centric" architectures are the same idea with different words: they can be combined (the layout of this note is hexagonal on the outside, onion-like on the inside).
+- In an interview, the key point is the dependency inversion: the core defines the interfaces, the technical code implements them.
+
+## Common pitfalls
+
+> **In short**: The most frequent mistakes: an anemic domain (all the rules in the services), ports that copy the technology (`extends JpaRepository`), mapping and interfaces everywhere "just in case", and one big hexagon for the whole application instead of one per business module. Hexagonal architecture is a cost to pay where the domain justifies it.
+
+- **Anemic domain**: `Order` with only getters and setters, all the rules in `PlaceOrderService`. The structure is hexagonal, but the business is still procedural code in services; the rules belong in the domain objects (`order.ship()`).
+- **Leaky ports**: `interface OrderRepository extends JpaRepository<OrderEntity, Long>` puts JPA in the core. A port is a plain interface with business methods.
+- **Over-engineering**: an interface for every class, a port per method, mapping between identical classes. Ports are only needed at real boundaries (persistence, external systems, messaging); a mapper (MapStruct) reduces the boilerplate.
+- **Reads through the domain**: loading full aggregates to display a list is slow and useless. Read use cases can use a dedicated outbound port returning views (`OrderSummaryQuery` → `List<OrderSummary>`, implemented with a JPA projection or SQL), without going through the domain model (a light form of CQRS).
+- **One global hexagon**: `domain/`, `application/`, `adapter/` at the root of the whole application mixes every business area. Package by business module first (`com.shop.order`, `com.shop.payment`), each one with its own hexagon; modules talk through their inbound ports or events, not by reading each other's tables.
+- **Applying it everywhere**: for a CRUD module or a thin proxy to another service, a simple controller → service → repository is enough, even inside an otherwise hexagonal application.
