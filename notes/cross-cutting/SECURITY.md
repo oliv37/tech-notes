@@ -107,36 +107,7 @@ eyJhbGciOiJSUzI1NiJ9 . eyJzdWIiOiI0MiIsInNjb3BlIjoib3JkZXJzIiwiZXhwIjoxNzYxNDc4M
 
 > **In short**: OAuth 2 is a **delegated authorization** protocol: an application (client) gets an **access token** from an authorization server (Keycloak, Auth0, Google) to call an API on behalf of a user, without ever seeing their password. OpenID Connect adds **authentication** on top: an **ID token** (JWT) that tells the client who the user is. For web and mobile apps, the flow to use is the authorization code flow with PKCE.
 
-| Role | Example |
-|---|---|
-| Resource owner | the user |
-| Client | the Angular app, the BFF, a mobile app |
-| Authorization server | Keycloak, Auth0, Okta, Spring Authorization Server |
-| Resource server | the API, which validates the access token |
-
-**Authorization code flow with PKCE**:
-
-1. The client redirects the user to the authorization server (`/authorize?client_id=...&scope=openid orders&code_challenge=...`).
-2. The user logs in **on the authorization server** (the client never sees the password) and consents.
-3. The authorization server redirects back to the client with a short-lived **authorization code**.
-4. The client exchanges the code for tokens (`/token`), sending the `code_verifier` matching the `code_challenge` (PKCE): an intercepted code is useless without it.
-5. The client calls the API with `Authorization: Bearer <access token>`; the API validates it.
-
-| Token | For | Content |
-|---|---|---|
-| Access token | the API (resource server) | permissions (`scope`), short-lived |
-| ID token (OIDC) | the client | who the user is (`sub`, `email`, `name`); never sent to an API |
-| Refresh token | the authorization server | gets new access tokens without logging in again; long-lived, revocable |
-
-| Flow | Use |
-|---|---|
-| Authorization code + PKCE | any app with a user (SPA, BFF, mobile) |
-| Client credentials | service to service, no user |
-| Device code | devices without a browser (TV, CLI) |
-| Implicit, password (ROPC) | deprecated: tokens exposed in the URL / password given to the client; removed in OAuth 2.1 (draft) |
-
-- Scopes limit what a token allows (`orders:read`); the user consents to them.
-- In Spring: `spring-boot-starter-oauth2-client` for the client side (login, BFF), `oauth2-resource-server` for the API (see [Spring Security](../back-end/spring/SPRING_SECURITY.md)).
+Details (actors, tokens, authorization code flow with PKCE, grant types, OpenID Connect): [OAuth 2](OAUTH2.md).
 
 ## Security headers
 
