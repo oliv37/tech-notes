@@ -40,6 +40,10 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 - [Kafka](notes/back-end/kafka/KAFKA.md)
 - [Kafka outbox pattern](notes/back-end/kafka/KAFKA_OUTBOX.md)
 
+**Elasticsearch**
+
+- [Elasticsearch](notes/back-end/elasticsearch/ELASTICSEARCH.md)
+
 ## Front-end
 
 **Angular**
