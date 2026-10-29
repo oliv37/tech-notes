@@ -45,6 +45,10 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 - [Elasticsearch](notes/back-end/elasticsearch/ELASTICSEARCH.md)
 
+**Build**
+
+- [Maven](notes/back-end/build/MAVEN.md)
+
 ## Front-end
 
 **Angular**
