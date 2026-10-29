@@ -8,6 +8,7 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 - [Java](notes/back-end/java/JAVA.md)
 - [Java Stream API](notes/back-end/java/JAVA_STREAM.md)
+- [Java design patterns](notes/back-end/java/JAVA_DESIGN_PATTERNS.md)
 - [Servlet](notes/back-end/java/SERVLET.md)
 
 **Spring**
