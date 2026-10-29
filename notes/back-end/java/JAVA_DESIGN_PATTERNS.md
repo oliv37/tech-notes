@@ -2,11 +2,11 @@
 
 > **In short**: Design patterns are proven, named solutions to recurring design problems. The reference is the "Gang of Four" book (1994, 23 patterns), in three families: creational (how objects are created), structural (how objects are composed) and behavioral (how objects interact). In interviews, the expected answer is the problem a pattern solves and where it appears in the JDK or Spring.
 
-| Family | Question | Main patterns |
-|---|---|---|
-| Creational | how to create objects? | Singleton, Factory Method, Builder |
-| Structural | how to compose them? | Adapter, Decorator, Proxy, Facade, Bridge |
-| Behavioral | how do they interact? | Strategy, Observer, Template Method, Chain of Responsibility, Command |
+| Family     | Question               | Main patterns                                                         |
+| ---------- | ---------------------- | --------------------------------------------------------------------- |
+| Creational | how to create objects? | Singleton, Factory Method, Builder                                    |
+| Structural | how to compose them?   | Adapter, Decorator, Proxy, Facade, Bridge                             |
+| Behavioral | how do they interact?  | Strategy, Observer, Template Method, Chain of Responsibility, Command |
 
 A pattern is a vocabulary as much as a solution: saying "a decorator around the repository" describes a design in a few words. Applied without a real need, it only adds indirection.
 
@@ -14,15 +14,15 @@ A pattern is a vocabulary as much as a solution: saying "a decorator around the 
 
 > **In short**: Singleton guarantees a single instance (in Spring, beans already are). Factory Method hides which class is instantiated behind a method: a static method replacing the constructor (`List.of`), or, in the GoF pattern, a creation method overridden by subclasses. Builder builds an object with many optional parameters step by step, with a readable call and an immutable result.
 
-| Pattern | Problem solved | In the JDK / Spring |
-|---|---|---|
-| Singleton | one shared instance | `Runtime.getRuntime()`, Spring beans (singleton scope); details in [Singleton](JAVA.md#singleton) |
+| Pattern        | Problem solved                                       | In the JDK / Spring                                                                                                |
+| -------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Singleton      | one shared instance                                  | `Runtime.getRuntime()`, Spring beans (singleton scope); details in [Singleton](JAVA.md#singleton)                  |
 | Factory Method | create an object without exposing its concrete class | static factory methods: `List.of()`, `Optional.empty()`, `Integer.valueOf()`; GoF pattern: `Collection.iterator()` |
-| Builder | many parameters, some optional | `StringBuilder`, `HttpRequest.newBuilder()`, `UriComponentsBuilder`, Lombok `@Builder` |
+| Builder        | many parameters, some optional                       | `StringBuilder`, `HttpRequest.newBuilder()`, `UriComponentsBuilder`, Lombok `@Builder`                             |
 
 **Factory Method** has two meanings:
 
-- **Static factory method** (*Effective Java*, item 1): a `static` method instead of a constructor. It has a name (`Optional.of` / `Optional.empty`), can return a cached instance (`Integer.valueOf(42)`), or a hidden subclass chosen from the parameters (`EnumSet.noneOf` returns a `RegularEnumSet` or a `JumboEnumSet` depending on the enum size).
+- **Static factory method** (_Effective Java_, item 1): a `static` method instead of a constructor. It has a name (`Optional.of` / `Optional.empty`), can return a cached instance (`Integer.valueOf(42)`), or a hidden subclass chosen from the parameters (`EnumSet.noneOf` returns a `RegularEnumSet` or a `JumboEnumSet` depending on the enum size).
 - **GoF pattern**: a base class uses an object in its algorithm but lets subclasses decide which concrete class to create, by overriding a creation method (`ReportExporter.createWriter()` returning a `PdfWriter` or a `CsvWriter`). In the JDK, each collection implements `iterator()` with its own `Iterator` class.
 
 A "simple factory" (a class with a `switch` on a type) isn't a GoF pattern; in Spring, it's usually replaced by injecting every implementation, as in the Strategy example below.
@@ -64,13 +64,13 @@ Validation goes in `build()` (or the private constructor), so an invalid `User` 
 
 > **In short**: Adapter, Decorator and Proxy wrap an object, with different intents. Adapter converts one interface into another that the client expects. Decorator adds behavior while keeping the same interface, and can be stacked. Proxy keeps the same interface but controls access (lazy loading, transactions, security): Spring AOP is built on it. Facade offers a simple interface over a complex subsystem. Bridge separates an abstraction from its implementation so that both vary independently (the JDBC API and its drivers).
 
-| Pattern | Intent | In the JDK / Spring |
-|---|---|---|
-| Adapter | make an incompatible interface usable | `InputStreamReader` (bytes → chars), `Arrays.asList()`, Spring MVC `HandlerAdapter` |
-| Decorator | add behavior, same interface, stackable | `BufferedInputStream`, `Collections.unmodifiableList()` |
-| Proxy | control access to the object, same interface | `@Transactional` / `@Cacheable` beans, Hibernate lazy entities, `java.lang.reflect.Proxy` |
-| Facade | simplify a complex subsystem | `JdbcTemplate` over JDBC, SLF4J over logging frameworks |
-| Bridge | two dimensions that vary independently, without one class per combination | JDBC: the API (`Connection`, `Statement`) and the drivers |
+| Pattern   | Intent                                                                    | In the JDK / Spring                                                                       |
+| --------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Adapter   | make an incompatible interface usable                                     | `InputStreamReader` (bytes → chars), `Arrays.asList()`, Spring MVC `HandlerAdapter`       |
+| Decorator | add behavior, same interface, stackable                                   | `BufferedInputStream`, `Collections.unmodifiableList()`                                   |
+| Proxy     | control access to the object, same interface                              | `@Transactional` / `@Cacheable` beans, Hibernate lazy entities, `java.lang.reflect.Proxy` |
+| Facade    | simplify a complex subsystem                                              | `JdbcTemplate` over JDBC, SLF4J over logging frameworks                                   |
+| Bridge    | two dimensions that vary independently, without one class per combination | JDBC: the API (`Connection`, `Statement`) and the drivers                                 |
 
 **Decorator**: the wrapper implements the same interface as the wrapped object and delegates to it.
 
@@ -122,13 +122,13 @@ new AlertNotification(new SmsSender()).notify(user);
 
 > **In short**: Strategy makes an algorithm interchangeable behind an interface (`Comparator`), replacing `if`/`switch` chains. Observer notifies subscribers of an event without knowing them (Spring events). Template Method fixes the steps of an algorithm in a base class and lets subclasses fill some of them. Chain of Responsibility passes a request along a chain of handlers, each one handling it or passing it on (servlet filters). Command turns an action into an object, so it can be queued, scheduled, logged or undone (`Runnable`).
 
-| Pattern | Problem solved | In the JDK / Spring |
-|---|---|---|
-| Strategy | choose an algorithm at runtime | `Comparator`, `PasswordEncoder`, any interface with several beans |
-| Observer | notify several objects of an event, without coupling | `ApplicationEventPublisher` + `@EventListener`, RxJS, `PropertyChangeListener` (`java.util.Observer` is deprecated since Java 9) |
-| Template Method | fixed steps, some customizable | `HttpServlet.service()` calling `doGet()` / `doPost()`, `AbstractList` |
-| Chain of Responsibility | several handlers, each may handle or pass on | servlet `Filter` / `FilterChain`, Spring Security filter chain, `HandlerInterceptor` |
-| Command | an action as an object: queue, schedule, undo | `Runnable` / `Callable` submitted to an `ExecutorService`, undo/redo in editors |
+| Pattern                 | Problem solved                                       | In the JDK / Spring                                                                                                              |
+| ----------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Strategy                | choose an algorithm at runtime                       | `Comparator`, `PasswordEncoder`, any interface with several beans                                                                |
+| Observer                | notify several objects of an event, without coupling | `ApplicationEventPublisher` + `@EventListener`, RxJS, `PropertyChangeListener` (`java.util.Observer` is deprecated since Java 9) |
+| Template Method         | fixed steps, some customizable                       | `HttpServlet.service()` calling `doGet()` / `doPost()`, `AbstractList`                                                           |
+| Chain of Responsibility | several handlers, each may handle or pass on         | servlet `Filter` / `FilterChain`, Spring Security filter chain, `HandlerInterceptor`                                             |
+| Command                 | an action as an object: queue, schedule, undo        | `Runnable` / `Callable` submitted to an `ExecutorService`, undo/redo in editors                                                  |
 
 Also often cited: **Iterator** (`Iterator`, for-each).
 
@@ -203,11 +203,11 @@ public class ApiKeyFilter implements Filter {
 - The `FilterChain` holds the position of the current filter, so the container creates one per request (Tomcat's `ApplicationFilterChain`, Spring Security's `VirtualFilterChain`). The filters themselves are single instances shared by all threads: they must be stateless.
 - Unlike a decorator, which always delegates, a link of the chain can stop.
 
-| | Observer | Chain of Responsibility |
-|---|---|---|
-| Who receives | every subscriber | the handlers in turn; one can stop the chain |
-| Shape | broadcast: one event, independent reactions | sequence: each handler decides what happens next |
-| Example | `OrderPlaced` → email, stock, loyalty points | servlet filters, Spring Security, expense approval |
+|              | Observer                                     | Chain of Responsibility                            |
+| ------------ | -------------------------------------------- | -------------------------------------------------- |
+| Who receives | every subscriber                             | the handlers in turn; one can stop the chain       |
+| Shape        | broadcast: one event, independent reactions  | sequence: each handler decides what happens next   |
+| Example      | `OrderPlaced` → email, stock, loyalty points | servlet filters, Spring Security, expense approval |
 
 **Command**: once an action is an object, it can be stored, queued, scheduled, retried or undone.
 
