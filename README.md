@@ -52,6 +52,10 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 ## Front-end
 
+**JavaScript**
+
+- [JavaScript](notes/front-end/javascript/JAVASCRIPT.md)
+
 **Angular**
 
 - [Angular](notes/front-end/angular/ANGULAR.md)
