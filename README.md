@@ -29,6 +29,7 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 - [Hibernate](notes/back-end/hibernate/HIBERNATE.md)
 - [Hibernate cache](notes/back-end/hibernate/HIBERNATE_CACHE.md)
+- [Hibernate stream](notes/back-end/hibernate/HIBERNATE_STREAM.md)
 
 **Test**
 
