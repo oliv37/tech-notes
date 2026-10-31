@@ -85,3 +85,4 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 - [Architecture](notes/cross-cutting/ARCHITECTURE.md)
 - [Hexagonal architecture](notes/cross-cutting/HEXAGONAL_ARCHITECTURE.md)
 - [CQRS](notes/cross-cutting/CQRS.md)
+- [Kubernetes](notes/cross-cutting/KUBERNETES.md)
