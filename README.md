@@ -60,6 +60,9 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 - [Angular](notes/front-end/angular/ANGULAR.md)
 - [Angular signals](notes/front-end/angular/ANGULAR_SIGNAL.md)
+- [Angular change detection: OnPush and zoneless](notes/front-end/angular/ANGULAR_CHANGE_DETECTION.md)
+- [Angular lifecycle](notes/front-end/angular/ANGULAR_LIFECYCLE.md)
+- [Angular tests](notes/front-end/angular/ANGULAR_TEST.md)
 
 **TypeScript**
 
