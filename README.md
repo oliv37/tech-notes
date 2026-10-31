@@ -25,6 +25,10 @@ Short technical notes covering the essentials for a Spring Boot / Angular back-e
 
 - [JDBC](notes/back-end/jdbc/JDBC.md)
 
+**Database**
+
+- [PostgreSQL](notes/back-end/database/POSTGRESQL.md)
+
 **Hibernate**
 
 - [Hibernate](notes/back-end/hibernate/HIBERNATE.md)
